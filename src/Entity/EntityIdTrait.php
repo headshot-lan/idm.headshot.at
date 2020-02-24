@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
+use Swagger\Annotations as SWG;
 
 trait EntityIdTrait
 {
@@ -23,6 +24,7 @@ trait EntityIdTrait
      *
      * @var UuidInterface
      *
+     * @SWG\Property(type="uuid")
      * @ORM\Column(type="uuid", unique=true)
      */
     protected $uuid;

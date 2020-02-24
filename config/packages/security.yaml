@@ -1,14 +1,27 @@
 security:
+
     # https://symfony.com/doc/current/security.html#where-do-users-come-from-user-providers
     providers:
-        users_in_memory: { memory: null }
+        # used to reload user from session & other features (e.g. switch_user)
+        in_memory:
+            memory: ~
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+        apidoc:
+            pattern: ^/api/(doc|doc.json)
+            security: false
+
+        api:
+            pattern:   ^/api
+            stateless: true
+            anonymous: true
+            security: false
+
         main:
             anonymous: lazy
-            provider: users_in_memory
+            provider: in_memory
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#firewalls-authentication
@@ -21,3 +34,5 @@ security:
     access_control:
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/api/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+        - { path: ^/api,       roles: ROLE_API }

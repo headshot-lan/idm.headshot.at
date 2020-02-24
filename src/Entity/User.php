@@ -3,12 +3,32 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Swagger\Annotations as SWG;
+
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
+ * @ORM\Table(name="app_users")
  */
 class User
 {
     use EntityIdTrait;
+
+    /**
+     * @ORM\Column(type="string", length=180, unique=true)
+     */
+    private $email;
+
+    /**
+     * @ORM\Column(type="json")
+     * @SWG\Property(type="array", @SWG\Items(type="string"))
+     */
+    private $roles = [];
+
+    /**
+     * @var string The hashed password
+     * @ORM\Column(type="string")
+     */
+    private $password;
 
     /**
      * @ORM\Column(type="integer")
@@ -19,16 +39,6 @@ class User
      * @ORM\Column(type="string", length=255)
      */
     private $nickname;
-
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $email;
-
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $password;
 
     /**
      * @ORM\Column(type="integer")
@@ -81,9 +91,9 @@ class User
     private $emailConfirmed;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Clan", inversedBy="users")
+     * @ORM\Column(type="boolean", nullable=true)
      */
-    private $clan;
+    private $isSuperadmin;
 
     public function getExternId(): ?int
     {
@@ -97,18 +107,6 @@ class User
         return $this;
     }
 
-    public function getNickname(): ?string
-    {
-        return $this->nickname;
-    }
-
-    public function setNickname(string $nickname): self
-    {
-        $this->nickname = $nickname;
-
-        return $this;
-    }
-
     public function getEmail(): ?string
     {
         return $this->email;
@@ -117,18 +115,6 @@ class User
     public function setEmail(string $email): self
     {
         $this->email = $email;
-
-        return $this;
-    }
-
-    public function getPassword(): ?string
-    {
-        return $this->password;
-    }
-
-    public function setPassword(string $password): self
-    {
-        $this->password = $password;
 
         return $this;
     }
@@ -253,14 +239,53 @@ class User
         return $this;
     }
 
-    public function getClan(): ?Clan
+    public function getNickname(): ?string
     {
-        return $this->clan;
+        return $this->nickname;
     }
 
-    public function setClan(?Clan $clan): self
+    public function setNickname(string $nickname): self
     {
-        $this->clan = $clan;
+        $this->nickname = $nickname;
+
+        return $this;
+    }
+
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+    public function getPassword(): string
+    {
+        return (string) $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
+
+        return $this;
+    }
+
+    public function getIsSuperadmin(): ?bool
+    {
+        return $this->isSuperadmin;
+    }
+
+    public function setIsSuperadmin(?bool $isSuperadmin): self
+    {
+        $this->isSuperadmin = $isSuperadmin;
 
         return $this;
     }
