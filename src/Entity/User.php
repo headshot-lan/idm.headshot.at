@@ -3,13 +3,16 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Swagger\Annotations as SWG;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  * @ORM\Table(name="app_users")
+ * @UniqueEntity(fields={"email"}, message="There is already an account with this email")
  */
-class User
+class User implements UserInterface
 {
     use EntityIdTrait;
 
@@ -31,7 +34,7 @@ class User
     private $password;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="integer", unique=true)
      */
     private $externId;
 
@@ -95,18 +98,6 @@ class User
      */
     private $isSuperadmin;
 
-    public function getExternId(): ?int
-    {
-        return $this->externId;
-    }
-
-    public function setExternId(int $externId): self
-    {
-        $this->externId = $externId;
-
-        return $this;
-    }
-
     public function getEmail(): ?string
     {
         return $this->email;
@@ -115,6 +106,18 @@ class User
     public function setEmail(string $email): self
     {
         $this->email = $email;
+
+        return $this;
+    }
+
+    public function getExternId(): ?int
+    {
+        return $this->externId;
+    }
+
+    public function setExternId(int $externId): self
+    {
+        $this->externId = $externId;
 
         return $this;
     }
@@ -251,6 +254,31 @@ class User
         return $this;
     }
 
+    public function getIsSuperadmin(): ?bool
+    {
+        return $this->isSuperadmin;
+    }
+
+    public function setIsSuperadmin(?bool $isSuperadmin): self
+    {
+        $this->isSuperadmin = $isSuperadmin;
+
+        return $this;
+    }
+
+    /**
+     * A visual identifier that represents this user.
+     *
+     * @see UserInterface
+     */
+    public function getUsername(): string
+    {
+        return (string) $this->email;
+    }
+
+    /**
+     * @see UserInterface
+     */
     public function getRoles(): array
     {
         $roles = $this->roles;
@@ -266,6 +294,10 @@ class User
 
         return $this;
     }
+
+    /**
+     * @see UserInterface
+     */
     public function getPassword(): string
     {
         return (string) $this->password;
@@ -278,15 +310,20 @@ class User
         return $this;
     }
 
-    public function getIsSuperadmin(): ?bool
+    /**
+     * @see UserInterface
+     */
+    public function getSalt()
     {
-        return $this->isSuperadmin;
+        // not needed when using the "bcrypt" algorithm in security.yaml
     }
 
-    public function setIsSuperadmin(?bool $isSuperadmin): self
+    /**
+     * @see UserInterface
+     */
+    public function eraseCredentials()
     {
-        $this->isSuperadmin = $isSuperadmin;
-
-        return $this;
+        // If you store any temporary, sensitive data on the user, clear it here
+        // $this->plainPassword = null;
     }
 }
