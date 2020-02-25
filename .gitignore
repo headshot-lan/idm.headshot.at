@@ -10,3 +10,6 @@
 
 # Exclude IDE Config
 /.idea/
+
+#Exclude PHP-CS-Fixer Cache
+.php_cs.cache
