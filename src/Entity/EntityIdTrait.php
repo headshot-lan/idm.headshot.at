@@ -24,7 +24,7 @@ trait EntityIdTrait
      *
      * @var UuidInterface
      *
-     * @SWG\Property(type="uuid")
+     * @SWG\Property(type="string")
      * @ORM\Column(type="uuid", unique=true)
      */
     protected $uuid;
