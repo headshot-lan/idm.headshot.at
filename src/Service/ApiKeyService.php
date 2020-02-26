@@ -12,17 +12,20 @@ class ApiKeyService
      * @var EntityManagerInterface
      */
     private $em;
+    /**
+     * @var ApiUserRepository
+     */
+    private $apiUserRepository;
 
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(EntityManagerInterface $entityManager, ApiUserRepository $apiUserRepository)
     {
         $this->em = $entityManager;
+        $this->apiUserRepository = $apiUserRepository;
     }
 
     public function listApiKeys()
     {
-        $query = $this->em->createQuery("SELECT u FROM \App\Entity\ApiUser u");
-        $apiuser = $query->getResult();
-        return $apiuser;
+        return $this->apiUserRepository->findAll();
     }
 
     public function createApiKey(array $credentials)
@@ -46,9 +49,7 @@ class ApiKeyService
 
     public function deleteApiKey($name)
     {
-        $query = $this->em->createQuery("SELECT u FROM \App\Entity\ApiUser u WHERE u.name = :name");
-        $query->setParameter('name', $name);
-        $apiuser = $query->getOneOrNullResult();
+        $apiuser = $this->apiUserRepository->findOneBy(['name' => $name]);
 
         try {
             $this->em->remove($apiuser);
