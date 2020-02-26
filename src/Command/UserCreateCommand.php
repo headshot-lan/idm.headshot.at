@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Service\UserService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,30 +13,50 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class UserCreateCommand extends Command
 {
     protected static $defaultName = 'app:user:create';
+    /**
+     * @var UserService
+     */
+    private $userService;
+
+    public function __construct(UserService $userService)
+    {
+        $this->userService = $userService;
+
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this
-            ->setDescription('Add a short description for your command')
-            ->addArgument('arg1', InputArgument::OPTIONAL, 'Argument description')
-            ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
+            ->setDescription('Creates a User')
+            ->addArgument('email', InputArgument::REQUIRED, 'EMail')
+            ->addArgument('password', InputArgument::REQUIRED, 'Plaintext Password')
+            ->addArgument('nickname', InputArgument::REQUIRED, 'Nickname')
+            ->addOption('confirmed', null, InputOption::VALUE_NONE, 'Set emailConfirmed to true')
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $arg1 = $input->getArgument('arg1');
 
-        if ($arg1) {
-            $io->note(sprintf('You passed an argument: %s', $arg1));
+        $userdata = [
+            'email' => $input->getArgument('email'),
+            'password' => $input->getArgument('password'),
+            'nickname' => $input->getArgument('nickname'),
+        ];
+        if ($input->getOption('confirmed')) {
+            $userdata['confirmed'] = true;
+        } else {
+            $userdata['confirmed'] = false;
         }
+        $result = $this->userService->createUser($userdata);
 
-        if ($input->getOption('option1')) {
-            // ...
+        if ($result) {
+            $io->success("User \"{$result->getEmail()}\" successfully created!");
+        } else {
+            $io->error("User \"{$input->getArgument('email')}\" could not be created!");
         }
-
-        $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
 
         return 0;
     }

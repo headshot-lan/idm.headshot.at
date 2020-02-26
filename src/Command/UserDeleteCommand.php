@@ -2,40 +2,53 @@
 
 namespace App\Command;
 
+use App\Service\UserService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 class UserDeleteCommand extends Command
 {
     protected static $defaultName = 'app:user:delete';
+    /**
+     * @var UserService
+     */
+    private $userService;
+
+    public function __construct(USerService $userService)
+    {
+        $this->userService = $userService;
+
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this
-            ->setDescription('Add a short description for your command')
-            ->addArgument('arg1', InputArgument::OPTIONAL, 'Argument description')
-            ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
+            ->setDescription('Deletes a User')
+            ->addArgument('uuid', InputArgument::REQUIRED, 'UUID from User')
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $arg1 = $input->getArgument('arg1');
 
-        if ($arg1) {
-            $io->note(sprintf('You passed an argument: %s', $arg1));
+        $uuid = $input->getArgument('uuid');
+        $user = $this->userService->getUser($uuid);
+        if ($io->confirm("Would you like to delete the User \"{$user->getEmail()}\" ?")) {
+
+            $deleted = $this->userService->deleteUser($uuid);
+            if ($deleted) {
+                $io->success("Successfully deleted User \"{$user->getEmail()}\"");
+            } else {
+                $io->error('Could not delete User!');
+            }
+        } else {
+            $io->warning('Aborted Userdeletion');
         }
-
-        if ($input->getOption('option1')) {
-            // ...
-        }
-
-        $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
 
         return 0;
     }
