@@ -18,6 +18,8 @@ fos_rest:
       xml: fos_rest.decoder.xml
   body_converter:
     enabled: true
+    validate: true
+    validation_errors_argument: validationErrors # This is the default value
   format_listener:
     rules:
       #            - { path: ^/api, prefer_extension: true, fallback_format: json, priorities: [ json, html ] }
