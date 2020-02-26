@@ -3,9 +3,10 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Ramsey\Uuid\Uuid;
+use Swagger\Annotations as SWG;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Swagger\Annotations as SWG;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
@@ -14,6 +15,13 @@ use Swagger\Annotations as SWG;
  */
 class User implements UserInterface
 {
+    public function __construct()
+    {
+        if (null === $this->uuid) {
+            $this->uuid = Uuid::uuid4();
+        }
+    }
+
     use EntityIdTrait;
 
     /**
@@ -34,11 +42,6 @@ class User implements UserInterface
     private $password;
 
     /**
-     * @ORM\Column(type="integer", unique=true)
-     */
-    private $externId;
-
-    /**
      * @ORM\Column(type="string", length=255)
      */
     private $nickname;
@@ -49,37 +52,37 @@ class User implements UserInterface
     private $status;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $firstname;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $surname;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="integer", nullable=true)
      */
     private $postcode;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $city;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $street;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $country;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $phone;
 
@@ -106,18 +109,6 @@ class User implements UserInterface
     public function setEmail(string $email): self
     {
         $this->email = $email;
-
-        return $this;
-    }
-
-    public function getExternId(): ?int
-    {
-        return $this->externId;
-    }
-
-    public function setExternId(int $externId): self
-    {
-        $this->externId = $externId;
 
         return $this;
     }
