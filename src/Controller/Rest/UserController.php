@@ -10,7 +10,6 @@ use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\Annotations\NamePrefix;
 use FOS\RestBundle\Controller\Annotations\Prefix;
-use Nelmio\ApiDocBundle\Annotation\Model;
 use Swagger\Annotations as SWG;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -70,12 +69,14 @@ class UserController extends AbstractFOSRestController
      * @SWG\Tag(name="Authorization")
      *
      * @Rest\Post("/register")
+     *
      */
     public function postRegisterAction(Request $request, UserPasswordEncoderInterface $passwordEncoder): Response
     {
         $user = new User();
+
         $form = $this->createForm(RegistrationFormType::class, $user);
-        $form->handleRequest($request);
+        $form->submit($request->request->all());
 
         if ($form->isSubmitted() && $form->isValid()) {
             // get Data from Form
@@ -104,8 +105,8 @@ class UserController extends AbstractFOSRestController
 
             // return the User Object
 
-            $query = $this->em->createQuery("SELECT u.externId,u.email,u.status,u.firstname,u.emailConfirmed,
-                                             u.nickname,u.roles,u.isSuperadmin,u.uuid,u.id 
+            $query = $this->em->createQuery("SELECT u.id,u.email,u.status,u.firstname,u.emailConfirmed,
+                                             u.nickname,u.roles,u.isSuperadmin,u.uuid
                                              FROM \App\Entity\User u WHERE u.email = :email");
 
             $query->setParameter('email', $user->getEmail());
@@ -140,10 +141,10 @@ class UserController extends AbstractFOSRestController
      *     description="EMail"
      * )
      * * @SWG\Parameter(
-     *     name="passwordhash",
+     *     name="password",
      *     in="formData",
      *     type="string",
-     *     description="Passwordhash"
+     *     description="Plaintext Password"
      * )
      * @SWG\Tag(name="Authorization")
      *
@@ -152,7 +153,7 @@ class UserController extends AbstractFOSRestController
     public function postAuthorizeAction(Request $request)
     {
         //Check if User can login
-        $credentials = ['email' => $request->get('email'), 'passwordhash' => $request->get('passwordhash')];
+        $credentials = ['email' => $request->get('email'), 'password' => $request->get('password')];
         $user = $this->loginService->checkCredentials($credentials);
 
         if ($user) {

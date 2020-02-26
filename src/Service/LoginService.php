@@ -2,8 +2,9 @@
 
 namespace App\Service;
 
-use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 class LoginService
 {
@@ -12,27 +13,39 @@ class LoginService
      * @var EntityManagerInterface
      */
     private $em;
+    /**
+     * @var UserRepository
+     */
+    private $userRepository;
+    /**
+     * @var UserPasswordEncoderInterface
+     */
+    private $passwordEncoder;
 
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, UserPasswordEncoderInterface $passwordEncoder)
     {
         $this->em = $entityManager;
+        $this->userRepository = $userRepository;
+        $this->passwordEncoder = $passwordEncoder;
     }
 
     public function checkCredentials(array $credentials)
     {
         $email = $credentials['email'];
-        $passwordhash = $credentials['passwordhash'];
+        $password = $credentials['password'];
 
-        $query = $this->em->createQuery("SELECT u.externId,u.email,u.status,u.firstname,u.emailConfirmed,
-                                             u.nickname,u.roles,u.isSuperadmin,u.uuid,u.id 
-                                             FROM \App\Entity\User u WHERE u.email = :email AND u.password = :password");
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+        $valid = $this->passwordEncoder->isPasswordValid($user, $password);
 
-        $query->setParameter('email', $email);
-        $query->setParameter('password', $passwordhash);
-        $user = $query->getOneOrNullResult();
-
-        if ($user) {
+        if ($valid) {
             //Fetch the UserObject from DB
+            $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.emailConfirmed,
+                                             u.nickname, u.roles, u.isSuperadmin, u.uuid, u.id 
+                                             FROM \App\Entity\User u WHERE u.email = :email");
+
+            $query->setParameter('email', $email);
+            $user = $query->getOneOrNullResult();
+
             return $user;
 
         } else {
