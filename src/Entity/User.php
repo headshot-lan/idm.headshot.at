@@ -97,9 +97,9 @@ class User implements UserInterface
     private $emailConfirmed;
 
     /**
-     * @ORM\Column(type="boolean", nullable=true)
+     * @ORM\Column(type="boolean")
      */
-    private $isSuperadmin;
+    private $isSuperadmin = false;
 
     public function getEmail(): ?string
     {
