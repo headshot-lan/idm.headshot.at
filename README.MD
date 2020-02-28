@@ -7,7 +7,7 @@ php bin/console doctrine:migrations:migrate
 ```
 
 ## Authentication
-You need an API Token for the /users Endpoint!
+You need an API Token for all /api/ Endpoints! (except the Documentation)
 
 Set the API-Token in the `X-API-KEY` Header
 
