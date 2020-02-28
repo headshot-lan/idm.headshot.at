@@ -164,4 +164,62 @@ class UserController extends AbstractFOSRestController
             throw $this->createNotFoundException('EMail and/or Password not found');
         }
     }
+
+    /**
+     * Returns a Single Userobject.
+     *
+     * @Rest\Get("/{search}", requirements= {"search"="([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|(\w+@\w+.\w+)"})
+     */
+    public function getUserAction(string $search, Request $request)
+    {
+        if (preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/', $search)) {
+            // UUID based Search
+            $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
+                                             u.street, u.country, u.phone, u.gender, u.emailConfirmed,
+                                             u.nickname, u.isSuperadmin, u.uuid, u.id
+                                             FROM \App\Entity\User u WHERE u.uuid = :search");
+        } elseif (preg_match("/\w+@\w+.\w+/", $search)) {
+            // E-Mail based Search
+            $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
+                                             u.street, u.country, u.phone, u.gender, u.emailConfirmed,
+                                             u.nickname, u.isSuperadmin, u.uuid, u.id
+                                             FROM \App\Entity\User u WHERE u.email = :search");
+        } else {
+            $view = $this->view('', Response::HTTP_BAD_REQUEST);
+
+            return $this->handleView($view);
+        }
+        $query->setParameter('search', $search);
+        $user = $query->getResult();
+
+        if ($user) {
+            $view = $this->view(['data' => $user]);
+        } else {
+            $view = $this->view('User not found', Response::HTTP_NOT_FOUND);
+        }
+        return $this->handleView($view);
+    }
+
+    /**
+     * Returns all Userobjects.
+     *
+     * @Rest\Get("")
+     */
+    public function getUsersAction(Request $request)
+    {
+        $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
+                                             u.street, u.country, u.phone, u.gender, u.emailConfirmed,
+                                             u.nickname, u.isSuperadmin, u.uuid, u.id 
+                                             FROM \App\Entity\User u WHERE u.status > 0");
+
+        $user = $query->getResult();
+
+        if ($user) {
+            $view = $this->view(['data' => $user]);
+
+            return $this->handleView($view);
+        } else {
+            throw $this->createNotFoundException('');
+        }
+    }
 }
