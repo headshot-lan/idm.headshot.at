@@ -157,15 +157,17 @@ class UserController extends AbstractFOSRestController
 
         if ($user) {
             $view = $this->view(['data' => $user]);
-
-            return $this->handleView($view);
         } else {
-            throw $this->createNotFoundException('EMail and/or Password not found');
+            $view = $this->view(['message' => 'EMail and/or Password not found', Response::HTTP_NOT_FOUND]);
         }
+
+        return $this->handleView($view);
     }
 
     /**
      * Returns a Single Userobject.
+     *
+     * Supports searching via UUID and via E-Mail
      *
      * @Rest\Get("/{search}", requirements= {"search"="([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|(\w+@\w+.\w+)"})
      */
@@ -194,7 +196,7 @@ class UserController extends AbstractFOSRestController
         if ($user) {
             $view = $this->view(['data' => $user]);
         } else {
-            $view = $this->view('User not found', Response::HTTP_NOT_FOUND);
+            $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);
@@ -216,10 +218,9 @@ class UserController extends AbstractFOSRestController
 
         if ($user) {
             $view = $this->view(['data' => $user]);
-
-            return $this->handleView($view);
         } else {
-            throw $this->createNotFoundException('');
+            $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
+        return $this->handleView($view);
     }
 }
