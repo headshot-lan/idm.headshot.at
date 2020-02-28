@@ -90,7 +90,7 @@ class UserController extends AbstractFOSRestController
             );
 
             // set defaults in User
-            $user->setStatus(0);
+            $user->setStatus(1);
             $user->setEmailConfirmed(false);
 
             $entityManager = $this->getDoctrine()->getManager();
