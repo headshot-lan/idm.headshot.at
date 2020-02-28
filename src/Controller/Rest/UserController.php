@@ -69,7 +69,6 @@ class UserController extends AbstractFOSRestController
      * @SWG\Tag(name="Authorization")
      *
      * @Rest\Post("/register")
-     *
      */
     public function postRegisterAction(Request $request, UserPasswordEncoderInterface $passwordEncoder): Response
     {
@@ -197,6 +196,7 @@ class UserController extends AbstractFOSRestController
         } else {
             $view = $this->view('User not found', Response::HTTP_NOT_FOUND);
         }
+
         return $this->handleView($view);
     }
 
