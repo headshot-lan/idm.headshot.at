@@ -6,7 +6,7 @@ php bin/console doctrine:database:create
 php bin/console doctrine:migrations:migrate
 ```
 
-##Authentication
+## Authentication
 You need an API Token for the /users Endpoint!
 
 Set the API-Token in the `X-API-KEY` Header
