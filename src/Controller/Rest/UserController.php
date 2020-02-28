@@ -158,7 +158,7 @@ class UserController extends AbstractFOSRestController
         if ($user) {
             $view = $this->view(['data' => $user]);
         } else {
-            $view = $this->view(['message' => 'EMail and/or Password not found', Response::HTTP_NOT_FOUND]);
+            $view = $this->view(['message' => 'EMail and/or Password not found'], Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);
