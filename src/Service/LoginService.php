@@ -8,7 +8,6 @@ use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 class LoginService
 {
-
     /**
      * @var EntityManagerInterface
      */
@@ -36,6 +35,16 @@ class LoginService
 
         $user = $this->userRepository->findOneBy(['email' => $email]);
         $valid = $this->passwordEncoder->isPasswordValid($user, $password);
+        if ($this->passwordEncoder->needsRehash($user)) {
+            //Rehash legacy Password if needed
+            $user->setPassword(
+                $this->passwordEncoder->encodePassword(
+                    $user,
+                    $password
+                )
+            );
+            $this->em->flush();
+        }
 
         if ($valid) {
             //Fetch the UserObject from DB
@@ -47,13 +56,9 @@ class LoginService
             $user = $query->getOneOrNullResult();
 
             return $user;
-
         } else {
             // User or Password false
             return false;
         }
-
-
-
     }
 }
