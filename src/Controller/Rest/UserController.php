@@ -4,17 +4,18 @@ namespace App\Controller\Rest;
 
 use App\Entity\User;
 use App\Form\RegistrationFormType;
+use App\Form\UserType;
 use App\Service\LoginService;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\Annotations\NamePrefix;
 use FOS\RestBundle\Controller\Annotations\Prefix;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Swagger\Annotations as SWG;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
-use function Doctrine\ORM\QueryBuilder;
 
 /**
  * Class UserController.
@@ -203,6 +204,47 @@ class UserController extends AbstractFOSRestController
         }
 
         return $this->handleView($view);
+    }
+
+    /**
+     * Edits a User.
+     *
+     * Edits a User
+     *
+     * @Rest\Patch("/{uuid}", requirements= {"search"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
+     * @ParamConverter()
+     */
+    public function editUserAction(User $user, Request $request)
+    {
+
+        // TODO: add support for updating specific Fields only
+        $form = $this->createForm(UserType::class, $user);
+
+        $form->submit($request->request->all());
+        if ($form->isSubmitted() && $form->isValid()) {
+            $user = $form->getData();
+
+            $em = $this->getDoctrine()->getManager();
+            $em->persist($user);
+            $em->flush();
+
+            $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
+                                             u.street, u.country, u.phone, u.gender, u.emailConfirmed,
+                                             u.nickname, u.isSuperadmin, u.uuid, u.id,
+                                             u.infoMails, u.website, u.steamAccount, u.registeredAt,
+                                             u.modifiedAt, u.hardware, u.favoriteGuns, u.statements
+                                             FROM \App\Entity\User u WHERE u.uuid = :uuid");
+            $query->setParameter('uuid', $user->getUuid());
+
+            $user = $query->getResult();
+            $view = $this->view(['data' => $user]);
+
+            return $this->handleView($view);
+        } else {
+            $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+
+            return $this->handleView($view);
+        }
     }
 
     /**

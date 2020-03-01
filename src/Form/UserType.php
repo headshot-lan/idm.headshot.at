@@ -12,10 +12,8 @@ class UserType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('externId')
-            ->add('nickname')
             ->add('email')
-            ->add('password')
+            ->add('nickname')
             ->add('status')
             ->add('firstname')
             ->add('surname')
@@ -26,8 +24,13 @@ class UserType extends AbstractType
             ->add('phone')
             ->add('gender')
             ->add('emailConfirmed')
-            ->add('uuid')
-            ->add('clan')
+            ->add('isSuperadmin')
+            ->add('website')
+            ->add('steamAccount')
+            ->add('hardware')
+            ->add('favoriteGuns')
+            ->add('infoMails')
+            ->add('statements')
         ;
     }
 
@@ -35,6 +38,7 @@ class UserType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => User::class,
+            'allow_extra_fields' => true,
         ]);
     }
 }
