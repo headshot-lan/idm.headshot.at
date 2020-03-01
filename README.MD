@@ -4,7 +4,19 @@
 composer install
 php bin/console doctrine:database:create
 php bin/console doctrine:migrations:migrate
+#Load Fixtures
+php bin/console doctrine:fixtures:load
 ```
+
+## Fixtures
+User Example:
+- Nickname: User 1
+- EMail: user1@localhost.local
+- Password: user1
+
+API Example:
+- Name: Example
+- APIKey: 1234
 
 ## Authentication
 You need an API Token for all /api/ Endpoints! (except the Documentation)
