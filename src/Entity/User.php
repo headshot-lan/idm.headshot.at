@@ -101,6 +101,31 @@ class User implements UserInterface
      */
     private $isSuperadmin = false;
 
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $website;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $steamAccount;
+
+    /**
+     * @ORM\Column(type="datetime")
+     */
+    private $registeredAt;
+
+    /**
+     * @ORM\Column(type="datetime")
+     */
+    private $modifiedAt;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $hardware;
+
     public function getEmail(): ?string
     {
         return $this->email;
@@ -316,5 +341,65 @@ class User implements UserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
+    }
+
+    public function getWebsite(): ?string
+    {
+        return $this->website;
+    }
+
+    public function setWebsite(?string $website): self
+    {
+        $this->website = $website;
+
+        return $this;
+    }
+
+    public function getSteamAccount(): ?string
+    {
+        return $this->steamAccount;
+    }
+
+    public function setSteamAccount(?string $steamAccount): self
+    {
+        $this->steamAccount = $steamAccount;
+
+        return $this;
+    }
+
+    public function getRegisteredAt(): ?\DateTimeInterface
+    {
+        return $this->registeredAt;
+    }
+
+    public function setRegisteredAt(\DateTimeInterface $registeredAt): self
+    {
+        $this->registeredAt = $registeredAt;
+
+        return $this;
+    }
+
+    public function getModifiedAt(): ?\DateTimeInterface
+    {
+        return $this->modifiedAt;
+    }
+
+    public function setModifiedAt(\DateTimeInterface $modifiedAt): self
+    {
+        $this->modifiedAt = $modifiedAt;
+
+        return $this;
+    }
+
+    public function getHardware(): ?string
+    {
+        return $this->hardware;
+    }
+
+    public function setHardware(?string $hardware): self
+    {
+        $this->hardware = $hardware;
+
+        return $this;
     }
 }
