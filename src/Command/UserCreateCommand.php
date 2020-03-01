@@ -33,6 +33,7 @@ class UserCreateCommand extends Command
             ->addArgument('password', InputArgument::REQUIRED, 'Plaintext Password')
             ->addArgument('nickname', InputArgument::REQUIRED, 'Nickname')
             ->addOption('confirmed', null, InputOption::VALUE_NONE, 'Set emailConfirmed to true')
+            ->addOption('infoMails', null, InputOption::VALUE_REQUIRED, 'Set infoMails (true/false)')
         ;
     }
 
@@ -49,6 +50,11 @@ class UserCreateCommand extends Command
             $userdata['confirmed'] = true;
         } else {
             $userdata['confirmed'] = false;
+        }
+        if ($input->getOption('infoMails')) {
+            $userdata['infoMails'] = $input->getOption('infoMails');
+        } else {
+            $userdata['infoMails'] = null;
         }
         $result = $this->userService->createUser($userdata);
 

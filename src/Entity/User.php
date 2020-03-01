@@ -11,6 +11,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  * @ORM\Table(name="app_users")
+ * @ORM\HasLifecycleCallbacks
+ *
  * @UniqueEntity(fields={"email"}, message="There is already an account with this email")
  */
 class User implements UserInterface
@@ -19,6 +21,10 @@ class User implements UserInterface
     {
         if (null === $this->uuid) {
             $this->uuid = Uuid::uuid4();
+        }
+        $this->setRegisteredAt(new \DateTime());
+        if (null == $this->getModifiedAt()) {
+            $this->setModifiedAt(new \DateTime());
         }
     }
 
@@ -125,6 +131,21 @@ class User implements UserInterface
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $hardware;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $favoriteGuns;
+
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $infoMails;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $statements;
 
     public function getEmail(): ?string
     {
@@ -401,5 +422,51 @@ class User implements UserInterface
         $this->hardware = $hardware;
 
         return $this;
+    }
+
+    public function getFavoriteGuns(): ?string
+    {
+        return $this->favoriteGuns;
+    }
+
+    public function setFavoriteGuns(?string $favoriteGuns): self
+    {
+        $this->favoriteGuns = $favoriteGuns;
+
+        return $this;
+    }
+
+    public function getInfoMails(): ?bool
+    {
+        return $this->infoMails;
+    }
+
+    public function setInfoMails(bool $infoMails): self
+    {
+        $this->infoMails = $infoMails;
+
+        return $this;
+    }
+
+    public function getStatements(): ?string
+    {
+        return $this->statements;
+    }
+
+    public function setStatements(?string $statements): self
+    {
+        $this->statements = $statements;
+
+        return $this;
+    }
+
+    /**
+     * @ORM\PrePersist()
+     * @ORM\PreUpdate()
+     */
+    public function updateModifiedAtDatetime()
+    {
+        // update the modified time
+        $this->setModifiedAt(new \DateTime());
     }
 }

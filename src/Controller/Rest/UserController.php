@@ -175,13 +175,17 @@ class UserController extends AbstractFOSRestController
             // UUID based Search
             $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
                                              u.street, u.country, u.phone, u.gender, u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid, u.id
+                                             u.nickname, u.isSuperadmin, u.uuid, u.id,
+                                             u.infoMails, u.website, u.steamAccount, u.registeredAt,
+                                             u.modifiedAt, u.hardware, u.favoriteGuns, u.statements
                                              FROM \App\Entity\User u WHERE u.uuid = :search");
         } elseif (preg_match("/\w+@\w+.\w+/", $search)) {
             // E-Mail based Search
             $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
                                              u.street, u.country, u.phone, u.gender, u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid, u.id
+                                             u.nickname, u.isSuperadmin, u.uuid, u.id,
+                                             u.infoMails, u.website, u.steamAccount, u.registeredAt,
+                                             u.modifiedAt, u.hardware, u.favoriteGuns, u.statements
                                              FROM \App\Entity\User u WHERE u.email = :search");
         } else {
             $view = $this->view('', Response::HTTP_BAD_REQUEST);

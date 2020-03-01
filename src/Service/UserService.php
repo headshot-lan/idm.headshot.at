@@ -49,11 +49,12 @@ class UserService
         if (null !== $userdata['email']) {
             $user->setEmail($userdata['email']);
             $user->setEmailConfirmed(false);
+            //TODO: resend Confirmation Mail
         }
         if (null !== $userdata['confirmed']) {
-            if ('true' === $userdata['confirmed']) {
+            if ('true' === $userdata['confirmed'] || true === $userdata['confirmed']) {
                 $user->setEmailConfirmed(true);
-            } elseif ('false' === $userdata['confirmed']) {
+            } elseif ('false' === $userdata['confirmed'] || false === $userdata['confirmed']) {
                 $user->setEmailConfirmed(false);
             }
         }
@@ -93,6 +94,29 @@ class UserService
         if (null !== $userdata['gender']) {
             $user->setGender($userdata['gender']);
         }
+        if (null !== $userdata['infoMails']) {
+            if ('true' === $userdata['infoMails'] || true === $userdata['infoMails']) {
+                $user->setInfoMails(true);
+            } elseif ('false' === $userdata['infoMails'] || false === $userdata['infoMails']) {
+                $user->setInfoMails(false);
+            }
+        }
+        if (null !== $userdata['website']) {
+            $user->setWebsite($userdata['website']);
+        }
+        if (null !== $userdata['steamAccount']) {
+            $user->setSteamAccount($userdata['steamAccount']);
+        }
+        if (null !== $userdata['hardware']) {
+            $user->setHardware($userdata['hardware']);
+        }
+        if (null !== $userdata['favoriteGuns']) {
+            $user->setFavoriteGuns($userdata['favoriteGuns']);
+        }
+        if (null !== $userdata['statements']) {
+            $user->setStatements($userdata['statements']);
+        }
+
         try {
             $this->em->flush();
 
@@ -138,6 +162,7 @@ class UserService
         $password = $userdata['password'];
         $nickname = $userdata['nickname'];
         $confirmed = $userdata['confirmed'];
+        $infoMails = $userdata['infoMails'];
 
         $user = new User();
         $user->setEmail($email);
@@ -147,6 +172,16 @@ class UserService
         $user->setPassword(
             $this->passwordEncoder->encodePassword($user, $password)
         );
+
+        if ($infoMails) {
+            if ('true' === $infoMails || true === $infoMails) {
+                $user->setInfoMails(true);
+            } elseif ('false' === $infoMails || false === $infoMails) {
+                $user->setInfoMails(false);
+            }
+        } else {
+            $user->setInfoMails(true);
+        }
 
         try {
             $this->em->persist($user);

@@ -33,6 +33,7 @@ class UserEditCommand extends Command
             ->addOption('email', null, InputOption::VALUE_REQUIRED, 'New EMail Address')
             ->addOption('confirmed', null, InputOption::VALUE_REQUIRED, 'Change emailConfirmed Flag (true/false)')
             ->addOption('superadmin', null, InputOption::VALUE_REQUIRED, 'Change Superadmin Flag (true/false)')
+            ->addOption('infoMails', null, InputOption::VALUE_REQUIRED, 'Change infoMails Flag (true/false)')
             ->addOption('status', null, InputOption::VALUE_REQUIRED, 'Edit Status')
             ->addOption('postcode', null, InputOption::VALUE_REQUIRED, 'Edit Postcode')
             ->addOption('nickname', null, InputOption::VALUE_REQUIRED, 'Edit Nickname')
@@ -42,6 +43,12 @@ class UserEditCommand extends Command
             ->addOption('country', null, InputOption::VALUE_REQUIRED, 'Edit Country')
             ->addOption('phone', null, InputOption::VALUE_REQUIRED, 'Edit Phone')
             ->addOption('gender', null, InputOption::VALUE_REQUIRED, 'Edit Gender');
+        $this
+            ->addOption('website', null, InputOption::VALUE_REQUIRED, 'Edit Website')
+            ->addOption('steamAccount', null, InputOption::VALUE_REQUIRED, 'Edit steamAccount')
+            ->addOption('hardware', null, InputOption::VALUE_REQUIRED, 'Edit Hardware')
+            ->addOption('favoriteGuns', null, InputOption::VALUE_REQUIRED, 'Edit favoriteGuns')
+            ->addOption('statements', null, InputOption::VALUE_REQUIRED, 'Edit Statements');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

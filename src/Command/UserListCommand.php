@@ -53,7 +53,11 @@ class UserListCommand extends Command
         if ($users) {
             $table = new Table($output);
             if ($input->getOption('detailed')) {
-                $table->setHeaders(['Id', 'EMail', 'Nickname', 'UUID', 'Status', 'Firstname', 'Surname', 'Postcode', 'City', 'Country', 'Phone', 'Gender', 'emailConfirmed', 'Superadmin']);
+                $table->setHeaders([
+                    'Id', 'EMail', 'Nickname', 'UUID', 'Status', 'Firstname', 'Surname', 'Postcode', 'City',
+                    'Country', 'Phone', 'Gender', 'infoMails', 'emailConfirmed',
+                    'Superadmin', 'registeredAt', 'modifiedAt',
+                ]);
                 foreach ($users as $key) {
                     $table->addRow([
                         $key->getId(),
@@ -68,8 +72,11 @@ class UserListCommand extends Command
                         $key->getCountry(),
                         $key->getPhone(),
                         $key->getGender(),
+                        $key->getInfoMails() ? 'Yes' : 'No',
                         $key->getEmailConfirmed() ? 'Yes' : 'No',
                         $key->getIsSuperadmin() ? 'Yes' : 'No',
+                        $key->getRegisteredAt()->format('d.m.Y H:i'),
+                        $key->getModifiedAt()->format('d.m.Y H:i'),
                     ]);
                 }
             } else {
