@@ -297,7 +297,9 @@ class UserController extends AbstractFOSRestController
     {
         $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
                                              u.street, u.country, u.phone, u.gender, u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid, u.id 
+                                             u.nickname, u.isSuperadmin, u.uuid, u.id,
+                                             u.infoMails, u.website, u.steamAccount, u.registeredAt,
+                                             u.modifiedAt, u.hardware, u.favoriteGuns, u.statements
                                              FROM \App\Entity\User u WHERE u.status > 0");
 
         $user = $query->getResult();
