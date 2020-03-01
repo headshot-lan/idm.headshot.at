@@ -66,7 +66,7 @@ class UserController extends AbstractFOSRestController
      *          )
      *        )
      *      )
-     * @SWG\Tag(name="Authorization")
+     * @SWG\Tag(name="UserManagement")
      *
      * @Rest\Post("/register")
      */
@@ -210,6 +210,8 @@ class UserController extends AbstractFOSRestController
      * Edits a User.
      *
      * Edits a User
+     * WARNING: for now it's mandatory to supply a full UserObject
+     *
      *
      * @Rest\Patch("/{uuid}", requirements= {"search"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
      * @ParamConverter()
