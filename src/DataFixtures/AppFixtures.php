@@ -27,8 +27,11 @@ class AppFixtures extends Fixture
             $user = new User();
             $user->setNickname('User '.$i);
             $user->setEmail('user'.$i.'@localhost.local');
+            $user->setStatus(1);
             $user->setPassword($this->encoder->encodePassword($user, 'user'.$i));
             $user->setEmailConfirmed(1 == mt_rand(0, 1));
+            $user->setInfoMails(1 == mt_rand(0, 1));
+            $user->setIsSuperadmin(1 == mt_rand(0, 1));
 
             $manager->persist($user);
         }
