@@ -41,8 +41,6 @@ class UserController extends AbstractFOSRestController
     /**
      * Registers the User.
      *
-     * Registers the User
-     *
      * @SWG\Response(
      *         response="200",
      *         description="Returned when successful"
@@ -221,6 +219,7 @@ class UserController extends AbstractFOSRestController
         } else {
             $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
+
         return $this->handleView($view);
     }
 }
