@@ -14,6 +14,7 @@ use Swagger\Annotations as SWG;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use function Doctrine\ORM\QueryBuilder;
 
 /**
  * Class UserController.
@@ -194,6 +195,47 @@ class UserController extends AbstractFOSRestController
         }
         $query->setParameter('search', $search);
         $user = $query->getResult();
+
+        if ($user) {
+            $view = $this->view(['data' => $user]);
+        } else {
+            $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->handleView($view);
+    }
+
+    /**
+     * Returns multiple Userobjects.
+     *
+     * Supports searching via UUID
+     *
+     * @Rest\Post("/search")
+     */
+    public function postUsersearchAction(Request $request)
+    {
+        // UUID based Search
+        $query = $this->em->createQueryBuilder();
+        $query->select('
+                u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
+                u.street, u.country, u.phone, u.gender, u.emailConfirmed,
+                u.nickname, u.isSuperadmin, u.uuid, u.id,
+                u.infoMails, u.website, u.steamAccount, u.registeredAt,
+                u.modifiedAt, u.hardware, u.favoriteGuns, u.statements
+            ');
+        $query->from('App\Entity\User', 'u');
+        $i = 0;
+        foreach (json_decode($request->getContent(), true)['uuid'] as $uuid) {
+            dump($uuid);
+            ++$i;
+            if (1 == $i) {
+                $query->where($query->expr()->eq('u.uuid', ":uuid{$i}"));
+            } else {
+                $query->orWhere($query->expr()->eq('u.uuid', ":uuid{$i}"));
+            }
+            $query->setParameter("uuid{$i}", $uuid);
+        }
+        $user = $query->getQuery()->getResult();
 
         if ($user) {
             $view = $this->view(['data' => $user]);
