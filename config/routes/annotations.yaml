@@ -1,5 +1,10 @@
+restcontrollers:
+    resource: ../../src/Controller/Rest/
+    type: rest
+    prefix: /api
+
 controllers:
-    resource: ../../src/Controller/
+    resource: ../../src/Controller/Admin/
     type: annotation
 
 kernel:

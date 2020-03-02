@@ -1,4 +1,3 @@
-
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
@@ -11,3 +10,6 @@
 
 # Exclude IDE Config
 /.idea/
+
+#Exclude PHP-CS-Fixer Cache
+.php_cs.cache

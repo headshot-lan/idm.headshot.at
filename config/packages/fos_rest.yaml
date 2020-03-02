@@ -1,15 +1,48 @@
 # Read the documentation: https://symfony.com/doc/master/bundles/FOSRestBundle/index.html
-fos_rest: null
-#    param_fetcher_listener:  true
-#    allowed_methods_listener:  true
-#    routing_loader: true
-#    view:
-#        view_response_listener:  true
-#    exception:
-#        codes:
-#            App\Exception\MyException: 403
-#        messages:
-#            App\Exception\MyException: Forbidden area.
-#    format_listener:
-#        rules:
-#            - { path: ^/api, prefer_extension: true, fallback_format: json, priorities: [ json, html ] }
+fos_rest:
+  disable_csrf_role: ROLE_API
+  param_fetcher_listener:  true
+  allowed_methods_listener:  true
+  routing_loader: true
+  view:
+    view_response_listener:  true
+    jsonp_handler: ~
+  #    exception:
+  #        codes:
+  #            App\Exception\MyException: 403
+  #        messages:
+  #            App\Exception\MyException: Forbidden area.
+  body_listener:
+    decoders:
+      json: fos_rest.decoder.jsontoform
+      xml: fos_rest.decoder.xml
+  body_converter:
+    enabled: true
+    validate: true
+    validation_errors_argument: validationErrors # This is the default value
+  format_listener:
+    rules:
+      #            - { path: ^/api, prefer_extension: true, fallback_format: json, priorities: [ json, html ] }
+      - { path: ^/api/doc, prefer_extension: true, fallback_format: json, priorities: [ json, html, jsonp, xml ] }
+      - { path: ^/api, prefer_extension: true, fallback_format: json, priorities: [ json, jsonp, xml ] }
+      # for an unknown reason, EACH REQUEST goes to FOS\RestBundle\EventListener\FormatListener
+      # so we need to add custom rule for custom api export but also for all other routes of the application...
+      - { path: '^/', priorities: ['text/html', '*/*'], fallback_format: html, prefer_extension: false }
+
+  versioning:
+    enabled: true
+    default_version: v1
+    resolvers:
+      query:
+        enabled: true
+        parameter_name: version
+      custom_header:
+        enabled: true
+        header_name: X-Accept-Version
+      media_type:
+        enabled: false
+        regex: /(v|version)=(?P<version>[0-9\.]+)/
+    guessing_order:
+      - query
+      - custom_header
+      - media_type

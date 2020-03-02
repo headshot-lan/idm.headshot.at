@@ -3,17 +3,49 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Ramsey\Uuid\Uuid;
+use Swagger\Annotations as SWG;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\UserInterface;
+
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
+ * @ORM\Table(name="app_users")
+ * @ORM\HasLifecycleCallbacks
+ *
+ * @UniqueEntity(fields={"email"}, message="There is already an account with this email")
  */
-class User
+class User implements UserInterface
 {
+    public function __construct()
+    {
+        if (null === $this->uuid) {
+            $this->uuid = Uuid::uuid4();
+        }
+        $this->setRegisteredAt(new \DateTime());
+        if (null == $this->getModifiedAt()) {
+            $this->setModifiedAt(new \DateTime());
+        }
+    }
+
     use EntityIdTrait;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="string", length=180, unique=true)
      */
-    private $externId;
+    private $email;
+
+    /**
+     * @ORM\Column(type="json")
+     * @SWG\Property(type="array", @SWG\Items(type="string"))
+     */
+    private $roles = [];
+
+    /**
+     * @var string The hashed password
+     * @ORM\Column(type="string")
+     */
+    private $password;
 
     /**
      * @ORM\Column(type="string", length=255)
@@ -21,52 +53,42 @@ class User
     private $nickname;
 
     /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $email;
-
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $password;
-
-    /**
      * @ORM\Column(type="integer")
      */
     private $status;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $firstname;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $surname;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="integer", nullable=true)
      */
     private $postcode;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $city;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $street;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $country;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $phone;
 
@@ -81,33 +103,49 @@ class User
     private $emailConfirmed;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Clan", inversedBy="users")
+     * @ORM\Column(type="boolean")
      */
-    private $clan;
+    private $isSuperadmin = false;
 
-    public function getExternId(): ?int
-    {
-        return $this->externId;
-    }
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $website;
 
-    public function setExternId(int $externId): self
-    {
-        $this->externId = $externId;
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $steamAccount;
 
-        return $this;
-    }
+    /**
+     * @ORM\Column(type="datetime")
+     */
+    private $registeredAt;
 
-    public function getNickname(): ?string
-    {
-        return $this->nickname;
-    }
+    /**
+     * @ORM\Column(type="datetime")
+     */
+    private $modifiedAt;
 
-    public function setNickname(string $nickname): self
-    {
-        $this->nickname = $nickname;
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $hardware;
 
-        return $this;
-    }
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $favoriteGuns;
+
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $infoMails;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $statements;
 
     public function getEmail(): ?string
     {
@@ -117,18 +155,6 @@ class User
     public function setEmail(string $email): self
     {
         $this->email = $email;
-
-        return $this;
-    }
-
-    public function getPassword(): ?string
-    {
-        return $this->password;
-    }
-
-    public function setPassword(string $password): self
-    {
-        $this->password = $password;
 
         return $this;
     }
@@ -253,15 +279,194 @@ class User
         return $this;
     }
 
-    public function getClan(): ?Clan
+    public function getNickname(): ?string
     {
-        return $this->clan;
+        return $this->nickname;
     }
 
-    public function setClan(?Clan $clan): self
+    public function setNickname(string $nickname): self
     {
-        $this->clan = $clan;
+        $this->nickname = $nickname;
 
         return $this;
+    }
+
+    public function getIsSuperadmin(): ?bool
+    {
+        return $this->isSuperadmin;
+    }
+
+    public function setIsSuperadmin(?bool $isSuperadmin): self
+    {
+        $this->isSuperadmin = $isSuperadmin;
+
+        return $this;
+    }
+
+    /**
+     * A visual identifier that represents this user.
+     *
+     * @see UserInterface
+     */
+    public function getUsername(): string
+    {
+        return (string) $this->email;
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function getPassword(): string
+    {
+        return (string) $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
+
+        return $this;
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function getSalt()
+    {
+        // not needed when using the "bcrypt" algorithm in security.yaml
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function eraseCredentials()
+    {
+        // If you store any temporary, sensitive data on the user, clear it here
+        // $this->plainPassword = null;
+    }
+
+    public function getWebsite(): ?string
+    {
+        return $this->website;
+    }
+
+    public function setWebsite(?string $website): self
+    {
+        $this->website = $website;
+
+        return $this;
+    }
+
+    public function getSteamAccount(): ?string
+    {
+        return $this->steamAccount;
+    }
+
+    public function setSteamAccount(?string $steamAccount): self
+    {
+        $this->steamAccount = $steamAccount;
+
+        return $this;
+    }
+
+    public function getRegisteredAt(): ?\DateTimeInterface
+    {
+        return $this->registeredAt;
+    }
+
+    public function setRegisteredAt(\DateTimeInterface $registeredAt): self
+    {
+        $this->registeredAt = $registeredAt;
+
+        return $this;
+    }
+
+    public function getModifiedAt(): ?\DateTimeInterface
+    {
+        return $this->modifiedAt;
+    }
+
+    public function setModifiedAt(\DateTimeInterface $modifiedAt): self
+    {
+        $this->modifiedAt = $modifiedAt;
+
+        return $this;
+    }
+
+    public function getHardware(): ?string
+    {
+        return $this->hardware;
+    }
+
+    public function setHardware(?string $hardware): self
+    {
+        $this->hardware = $hardware;
+
+        return $this;
+    }
+
+    public function getFavoriteGuns(): ?string
+    {
+        return $this->favoriteGuns;
+    }
+
+    public function setFavoriteGuns(?string $favoriteGuns): self
+    {
+        $this->favoriteGuns = $favoriteGuns;
+
+        return $this;
+    }
+
+    public function getInfoMails(): ?bool
+    {
+        return $this->infoMails;
+    }
+
+    public function setInfoMails(bool $infoMails): self
+    {
+        $this->infoMails = $infoMails;
+
+        return $this;
+    }
+
+    public function getStatements(): ?string
+    {
+        return $this->statements;
+    }
+
+    public function setStatements(?string $statements): self
+    {
+        $this->statements = $statements;
+
+        return $this;
+    }
+
+    /**
+     * @ORM\PrePersist()
+     * @ORM\PreUpdate()
+     */
+    public function updateModifiedAtDatetime()
+    {
+        // update the modified time
+        $this->setModifiedAt(new \DateTime());
     }
 }
