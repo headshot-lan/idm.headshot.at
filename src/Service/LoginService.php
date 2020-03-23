@@ -33,7 +33,16 @@ class LoginService
         $email = $credentials['email'];
         $password = $credentials['password'];
 
+        if (empty($email) || empty($password)) {
+            return false;
+        }
+
         $user = $this->userRepository->findOneBy(['email' => $email]);
+
+        if (empty($user)) {
+            return false;
+        }
+
         $valid = $this->passwordEncoder->isPasswordValid($user, $password);
         if ($this->passwordEncoder->needsRehash($user)) {
             //Rehash legacy Password if needed
