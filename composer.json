@@ -2,10 +2,11 @@
     "type": "project",
     "license": "proprietary",
     "require": {
-        "php": "7.3.*",
+        "php": "^7.4.*",
         "ext-ctype": "*",
         "ext-iconv": "*",
         "ext-json": "*",
+        "ext-xml": "*",
         "doctrine/doctrine-migrations-bundle": "^2.1",
         "friendsofsymfony/rest-bundle": "^2.7",
         "nelmio/api-doc-bundle": "^3.5",
