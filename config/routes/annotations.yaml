@@ -1,5 +1,5 @@
 restcontrollers:
-    resource: ../../src/Controller/Rest/
+    resource: ../src/Controller/Rest/
     type: rest
     prefix: /api
 
