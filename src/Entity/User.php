@@ -36,12 +36,6 @@ class User implements UserInterface
     private $email;
 
     /**
-     * @ORM\Column(type="json")
-     * @SWG\Property(type="array", @SWG\Items(type="string"))
-     */
-    private $roles = [];
-
-    /**
      * @var string The hashed password
      * @ORM\Column(type="string")
      */
@@ -131,11 +125,6 @@ class User implements UserInterface
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $hardware;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
-    private $favoriteGuns;
 
     /**
      * @ORM\Column(type="boolean")
@@ -318,18 +307,7 @@ class User implements UserInterface
      */
     public function getRoles(): array
     {
-        $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
-
-        return array_unique($roles);
-    }
-
-    public function setRoles(array $roles): self
-    {
-        $this->roles = $roles;
-
-        return $this;
+        return [];
     }
 
     /**
@@ -420,18 +398,6 @@ class User implements UserInterface
     public function setHardware(?string $hardware): self
     {
         $this->hardware = $hardware;
-
-        return $this;
-    }
-
-    public function getFavoriteGuns(): ?string
-    {
-        return $this->favoriteGuns;
-    }
-
-    public function setFavoriteGuns(?string $favoriteGuns): self
-    {
-        $this->favoriteGuns = $favoriteGuns;
 
         return $this;
     }

@@ -28,7 +28,6 @@ class UserType extends AbstractType
             ->add('website')
             ->add('steamAccount')
             ->add('hardware')
-            ->add('favoriteGuns')
             ->add('infoMails')
             ->add('statements')
         ;

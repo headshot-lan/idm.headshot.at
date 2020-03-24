@@ -47,7 +47,6 @@ class UserEditCommand extends Command
             ->addOption('website', null, InputOption::VALUE_REQUIRED, 'Edit Website')
             ->addOption('steamAccount', null, InputOption::VALUE_REQUIRED, 'Edit steamAccount')
             ->addOption('hardware', null, InputOption::VALUE_REQUIRED, 'Edit Hardware')
-            ->addOption('favoriteGuns', null, InputOption::VALUE_REQUIRED, 'Edit favoriteGuns')
             ->addOption('statements', null, InputOption::VALUE_REQUIRED, 'Edit Statements');
     }
 

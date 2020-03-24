@@ -110,9 +110,6 @@ class UserService
         if (null !== $userdata['hardware']) {
             $user->setHardware($userdata['hardware']);
         }
-        if (null !== $userdata['favoriteGuns']) {
-            $user->setFavoriteGuns($userdata['favoriteGuns']);
-        }
         if (null !== $userdata['statements']) {
             $user->setStatements($userdata['statements']);
         }

@@ -31,10 +31,23 @@ class AppFixtures extends Fixture
             $user->setPassword($this->encoder->encodePassword($user, 'user'.$i));
             $user->setEmailConfirmed(1 == mt_rand(0, 1));
             $user->setInfoMails(1 == mt_rand(0, 1));
-            $user->setIsSuperadmin(1 == mt_rand(0, 1));
+            $user->setIsSuperadmin(false);
 
             $manager->persist($user);
         }
+
+        // create admin user
+        $admin = new User();
+        $admin->setNickname('Admin');
+        $admin->setEmail('admin@localhost.local');
+        $admin->setStatus(1);
+        $admin->setPassword($this->encoder->encodePassword($user, 'admin'));
+        $admin->setEmailConfirmed(1);
+        $admin->setInfoMails(false);
+        $admin->setIsSuperadmin(true);
+
+        $manager->persist($admin);
+
 
         // create one API-Key
         $apiuser = new ApiUser();
