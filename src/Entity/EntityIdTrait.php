@@ -38,4 +38,9 @@ trait EntityIdTrait
     {
         return $this->uuid;
     }
+
+    public function setUuid(UuidInterface $uuid)
+    {
+        $this->uuid = $uuid;
+    }
 }
