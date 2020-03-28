@@ -5,6 +5,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
 use Swagger\Annotations as SWG;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 trait EntityIdTrait
 {
@@ -15,6 +16,7 @@ trait EntityIdTrait
      *
      * @ORM\Id
      * @ORM\Column(type="integer", options={"unsigned": true})
+     * @Groups("default")
      * @ORM\GeneratedValue
      */
     protected $id;
@@ -26,6 +28,7 @@ trait EntityIdTrait
      *
      * @SWG\Property(type="string")
      * @ORM\Column(type="uuid", unique=true)
+     * @Groups("default")
      */
     protected $uuid;
 

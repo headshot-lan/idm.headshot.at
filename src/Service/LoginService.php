@@ -57,12 +57,8 @@ class LoginService
 
         if ($valid) {
             //Fetch the UserObject from DB
-            $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid, u.id 
-                                             FROM \App\Entity\User u WHERE u.email = :email");
 
-            $query->setParameter('email', $email);
-            $user = $query->getOneOrNullResult();
+            $user = $this->userRepository->findOneBy(['email' => $email]);
 
             return $user;
         } else {

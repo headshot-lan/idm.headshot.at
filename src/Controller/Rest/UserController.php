@@ -4,13 +4,16 @@ namespace App\Controller\Rest;
 
 use App\Entity\User;
 use App\Form\RegistrationFormType;
-use App\Form\UserType;
+use App\Form\UserEditType;
+use App\Repository\UserRepository;
 use App\Service\LoginService;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\Annotations\NamePrefix;
 use FOS\RestBundle\Controller\Annotations\Prefix;
+use Ramsey\Uuid\Uuid;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Swagger\Annotations as SWG;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,11 +36,16 @@ class UserController extends AbstractFOSRestController
      * @var LoginService
      */
     private $loginService;
+    /**
+     * @var UserRepository
+     */
+    private UserRepository $userRepository;
 
-    public function __construct(EntityManagerInterface $entityManager, LoginService $loginService)
+    public function __construct(EntityManagerInterface $entityManager, LoginService $loginService, UserRepository $userRepository)
     {
         $this->em = $entityManager;
         $this->loginService = $loginService;
+        $this->userRepository = $userRepository;
     }
 
     /**
@@ -93,24 +101,19 @@ class UserController extends AbstractFOSRestController
             $user->setStatus(1);
             $user->setEmailConfirmed(false);
 
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($user);
-            $entityManager->flush();
-
-            // do anything else you need here, like send an email
+            $this->em->persist($user);
+            $this->em->flush();
 
             // send the confirmation Email
             //TODO: send the confirmation Email
 
             // return the User Object
 
-            $query = $this->em->createQuery("SELECT u.id,u.email,u.status,u.firstname,u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid
-                                             FROM \App\Entity\User u WHERE u.email = :email");
+            $user = $this->userRepository->findOneBy(['email' => $user->getEMail()]);
 
-            $query->setParameter('email', $user->getEmail());
-            $user = $query->getOneOrNullResult();
             $view = $this->view(['data' => $user]);
+            $view->getContext()->setSerializeNull(true);
+            $view->getContext()->addGroup('default');
 
             return $this->handleView($view);
         }
@@ -157,6 +160,8 @@ class UserController extends AbstractFOSRestController
 
         if ($user) {
             $view = $this->view(['data' => $user]);
+            $view->getContext()->setSerializeNull(true);
+            $view->getContext()->addGroup('default');
         } else {
             $view = $this->view(['message' => 'EMail and/or Password not found'], Response::HTTP_NOT_FOUND);
         }
@@ -171,34 +176,26 @@ class UserController extends AbstractFOSRestController
      *
      * @Rest\Get("/{search}", requirements= {"search"="([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|(\w+@\w+.\w+)"})
      */
-    public function getUserAction(string $search, Request $request)
+    public function getUserAction(string $search)
     {
         if (preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/', $search)) {
             // UUID based Search
-            $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
-                                             u.street, u.country, u.phone, u.gender, u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid, u.id,
-                                             u.infoMails, u.website, u.steamAccount, u.registeredAt,
-                                             u.modifiedAt, u.hardware, u.statements
-                                             FROM \App\Entity\User u WHERE u.uuid = :search");
+
+            $user = $this->userRepository->findOneBy(['uuid' => $search]);
         } elseif (preg_match("/\w+@\w+.\w+/", $search)) {
             // E-Mail based Search
-            $query = $this->em->createQuery("SELECT u.email, u.status, u.firstname, u.surname, u.postcode, u.city,
-                                             u.street, u.country, u.phone, u.gender, u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid, u.id,
-                                             u.infoMails, u.website, u.steamAccount, u.registeredAt,
-                                             u.modifiedAt, u.hardware, u.statements
-                                             FROM \App\Entity\User u WHERE u.email = :search");
+
+            $user = $this->userRepository->findOneBy(['email' => $search]);
         } else {
             $view = $this->view('', Response::HTTP_BAD_REQUEST);
 
             return $this->handleView($view);
         }
-        $query->setParameter('search', $search);
-        $user = $query->getResult();
 
         if ($user) {
             $view = $this->view(['data' => $user]);
+            $view->getContext()->setSerializeNull(true);
+            $view->getContext()->addGroup('default');
         } else {
             $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
@@ -212,34 +209,25 @@ class UserController extends AbstractFOSRestController
      * Edits a User
      * WARNING: for now it's mandatory to supply a full UserObject
      *
-     *
      * @Rest\Patch("/{uuid}", requirements= {"search"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
      * @ParamConverter()
      */
     public function editUserAction(User $user, Request $request)
     {
+        $form = $this->createForm(UserEditType::class, $user);
 
-        // TODO: add support for updating specific Fields only
-        $form = $this->createForm(UserType::class, $user);
-
-        $form->submit($request->request->all());
+        // Specify clearMissing on false to support partial editing
+        $form->submit($request->request->all(), false);
         if ($form->isSubmitted() && $form->isValid()) {
             $user = $form->getData();
 
-            $em = $this->getDoctrine()->getManager();
-            $em->persist($user);
-            $em->flush();
+            $this->em->persist($user);
+            $this->em->flush();
 
-            $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
-                                             u.street, u.country, u.phone, u.gender, u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid, u.id,
-                                             u.infoMails, u.website, u.steamAccount, u.registeredAt,
-                                             u.modifiedAt, u.hardware, u.statements
-                                             FROM \App\Entity\User u WHERE u.uuid = :uuid");
-            $query->setParameter('uuid', $user->getUuid());
-
-            $user = $query->getResult();
+            $user = $this->userRepository->findOneBy(['uuid' => $user->getUuid()]);
             $view = $this->view(['data' => $user]);
+            $view->getContext()->setSerializeNull(true);
+            $view->getContext()->addGroup('default');
 
             return $this->handleView($view);
         } else {
@@ -259,30 +247,34 @@ class UserController extends AbstractFOSRestController
     public function postUsersearchAction(Request $request)
     {
         // UUID based Search
-        $query = $this->em->createQueryBuilder();
-        $query->select('
-                u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
-                u.street, u.country, u.phone, u.gender, u.emailConfirmed,
-                u.nickname, u.isSuperadmin, u.uuid, u.id,
-                u.infoMails, u.website, u.steamAccount, u.registeredAt,
-                u.modifiedAt, u.hardware, u.statements
-            ');
-        $query->from('App\Entity\User', 'u');
-        $i = 0;
-        foreach (json_decode($request->getContent(), true)['uuid'] as $uuid) {
-            dump($uuid);
-            ++$i;
-            if (1 == $i) {
-                $query->where($query->expr()->eq('u.uuid', ":uuid{$i}"));
-            } else {
-                $query->orWhere($query->expr()->eq('u.uuid', ":uuid{$i}"));
-            }
-            $query->setParameter("uuid{$i}", $uuid);
+
+        if ('json' !== $request->getContentType()) {
+            $view = $this->view(['message' => 'Invalid Content-Type'], Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+            return $this->handleView($view);
         }
-        $user = $query->getQuery()->getResult();
+        $content = $request->getContent();
+        if (empty($content)) {
+            $view = $this->view(['message' => 'No Body supplied, please check the Documentation'], Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+            return $this->handleView($view);
+        }
+        $decode = json_decode($content);
+        if (empty($decode) || !is_object($decode) || !is_array($decode->uuid)) {
+            $view = $this->view(['message' => 'Invalid JSON Body supplied, please check the Documentation'], Response::HTTP_BAD_REQUEST);
+            return $this->handleView($view);
+        }
+        foreach ($decode->uuid as $item) {
+            if (!is_string($item) || !Uuid::isValid($item)) {
+                $view = $this->view(['message' => 'Invalid UUIDs supplied'], Response::HTTP_BAD_REQUEST);
+                return $this->handleView($view);
+            }
+        }
+
+        $user = $this->userRepository->findBy(['uuid' => $decode->uuid]);
 
         if ($user) {
             $view = $this->view(['data' => $user]);
+            $view->getContext()->setSerializeNull(true);
+            $view->getContext()->addGroup('default');
         } else {
             $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
@@ -295,19 +287,18 @@ class UserController extends AbstractFOSRestController
      *
      * @Rest\Get("")
      */
-    public function getUsersAction(Request $request)
+    public function getUsersAction()
     {
-        $query = $this->em->createQuery("SELECT u.email,u.status,u.firstname, u.surname, u.postcode, u.city,
-                                             u.street, u.country, u.phone, u.gender, u.emailConfirmed,
-                                             u.nickname, u.isSuperadmin, u.uuid, u.id,
-                                             u.infoMails, u.website, u.steamAccount, u.registeredAt,
-                                             u.modifiedAt, u.hardware, u.statements
-                                             FROM \App\Entity\User u WHERE u.status > 0");
+        // Select all Users where the Status is greater then 0 (e.g. not disabled/locked/deactivated)
+        $criteria = new Criteria();
+        $criteria->where($criteria->expr()->gt('status', 0));
 
-        $user = $query->getResult();
+        $user = $this->userRepository->matching($criteria);
 
         if ($user) {
             $view = $this->view(['data' => $user]);
+            $view->getContext()->setSerializeNull(true);
+            $view->getContext()->addGroup('default');
         } else {
             $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }

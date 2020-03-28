@@ -7,6 +7,8 @@ use Ramsey\Uuid\Uuid;
 use Swagger\Annotations as SWG;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
+
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
@@ -32,6 +34,7 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=180, unique=true)
+     * @Groups("default")
      */
     private $email;
 
@@ -43,96 +46,115 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Groups("default")
      */
     private $nickname;
 
     /**
      * @ORM\Column(type="integer")
+     * @Groups("default")
      */
     private $status;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $firstname;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $surname;
 
     /**
      * @ORM\Column(type="integer", nullable=true)
+     * @Groups("default")
      */
     private $postcode;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $city;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $street;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $country;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $phone;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $gender;
 
     /**
      * @ORM\Column(type="boolean")
+     * @Groups("default")
      */
     private $emailConfirmed;
 
     /**
      * @ORM\Column(type="boolean")
+     * @Groups("default")
      */
     private $isSuperadmin = false;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $website;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $steamAccount;
 
     /**
      * @ORM\Column(type="datetime")
+     * @Groups("default")
      */
     private $registeredAt;
 
     /**
      * @ORM\Column(type="datetime")
+     * @Groups("default")
      */
     private $modifiedAt;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $hardware;
 
     /**
      * @ORM\Column(type="boolean")
+     * @Groups("default")
      */
     private $infoMails;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups("default")
      */
     private $statements;
 
@@ -296,6 +318,7 @@ class User implements UserInterface
      * A visual identifier that represents this user.
      *
      * @see UserInterface
+     * @Groups("default")
      */
     public function getUsername(): string
     {
