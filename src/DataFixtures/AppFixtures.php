@@ -43,7 +43,7 @@ class AppFixtures extends Fixture
         $admin->setNickname('Admin');
         $admin->setEmail('admin@localhost.local');
         $admin->setStatus(1);
-        $admin->setPassword($this->encoder->encodePassword($user, 'admin'));
+        $admin->setPassword($this->encoder->encodePassword($admin, 'admin'));
         $admin->setEmailConfirmed(1);
         $admin->setInfoMails(false);
         $admin->setIsSuperadmin(true);
