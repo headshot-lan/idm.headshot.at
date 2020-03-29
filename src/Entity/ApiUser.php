@@ -32,6 +32,11 @@ class ApiUser implements UserInterface
      */
     private $apiToken;
 
+    /**
+     * @ORM\Column(type="string", length=255)
+     */
+    private $host;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -111,6 +116,18 @@ class ApiUser implements UserInterface
     public function setApiToken(?string $apiToken): self
     {
         $this->apiToken = $apiToken;
+
+        return $this;
+    }
+
+    public function getHost(): ?string
+    {
+        return $this->host;
+    }
+
+    public function setHost(string $host): self
+    {
+        $this->host = $host;
 
         return $this;
     }

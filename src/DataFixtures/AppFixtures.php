@@ -55,6 +55,7 @@ class AppFixtures extends Fixture
         $apiuser = new ApiUser();
         $apiuser->setName('Example');
         $apiuser->setApiToken('1234');
+        $apiuser->setHost('localhost');
 
         $manager->persist($apiuser);
 

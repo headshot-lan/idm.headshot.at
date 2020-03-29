@@ -38,9 +38,9 @@ class ApikeysListCommand extends Command
         $keys = $this->apiKeyService->listApiKeys();
 
         $table = new Table($output);
-        $table->setHeaders(['Name', 'API Key']);
+        $table->setHeaders(['Name', 'API Key', 'Host']);
         foreach ($keys as $key) {
-            $table->addRow([$key->getName(), $key->getApiToken()]);
+            $table->addRow([$key->getName(), $key->getApiToken(), $key->getHost()]);
         }
         $table->render();
 
