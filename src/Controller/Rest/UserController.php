@@ -258,7 +258,7 @@ class UserController extends AbstractFOSRestController
             return $this->handleView($view);
         }
         $decode = json_decode($content);
-        if (empty($decode) || !is_object($decode) || !is_array($decode->uuid)) {
+        if (empty($decode) || !is_object($decode) || empty($decode->uuid) || !is_array($decode->uuid)) {
             $view = $this->view(['message' => 'Invalid JSON Body supplied, please check the Documentation'], Response::HTTP_BAD_REQUEST);
             return $this->handleView($view);
         }
