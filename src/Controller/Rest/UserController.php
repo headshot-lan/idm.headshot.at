@@ -8,6 +8,8 @@ use App\Form\UserEditType;
 use App\Repository\UserRepository;
 use App\Service\LoginService;
 use App\Transfer\Error;
+use App\Transfer\Login;
+use App\Transfer\Search;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
@@ -20,6 +22,7 @@ use Swagger\Annotations as SWG;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
  * Class UserController.
@@ -112,7 +115,7 @@ class UserController extends AbstractFOSRestController
 
             $user = $this->userRepository->findOneBy(['email' => $user->getEMail()]);
 
-            $view = $this->view(['data' => $user]);
+            $view = $this->view($user);
             $view->getContext()->setSerializeNull(true);
             $view->getContext()->addGroup('default');
 
@@ -152,19 +155,22 @@ class UserController extends AbstractFOSRestController
      * @SWG\Tag(name="Authorization")
      *
      * @Rest\Post("/authorize")
+     * @ParamConverter("login", converter="fos_rest.request_body")
      */
-    public function postAuthorizeAction(Request $request)
+    public function postAuthorizeAction(Login $login, ConstraintViolationListInterface $validationErrors)
     {
+        if (count($validationErrors) > 0) {
+            $view = $this->view(Error::withMessageAndDetail("Invalid JSON Body supplied, please check the Documentation", $validationErrors[0]), Response::HTTP_BAD_REQUEST);
+            return $this->handleView($view);
+        }
+
         //Check if User can login
-        $credentials = ['email' => $request->get('email'), 'password' => $request->get('password')];
-        $user = $this->loginService->checkCredentials($credentials);
+        $user = $this->loginService->checkCredentials($login->email, $login->password);
 
         if ($user) {
-            $view = $this->view(['data' => $user]);
-            $view->getContext()->setSerializeNull(true);
-            $view->getContext()->addGroup('default');
+            $view = $this->view();
         } else {
-            $view = $this->view(Error::withMessage('EMail and/or Password not found'), Response::HTTP_NOT_FOUND);
+            $view = $this->view(Error::withMessage('Invalid credentials'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);
@@ -244,33 +250,16 @@ class UserController extends AbstractFOSRestController
      * Supports searching via UUID
      *
      * @Rest\Post("/search")
+     * @ParamConverter("search", converter="fos_rest.request_body")
      */
-    public function postUsersearchAction(Request $request)
+    public function postUsersearchAction(Search $search, ConstraintViolationListInterface $validationErrors)
     {
-        // UUID based Search
-
-        if ('json' !== $request->getContentType()) {
-            $view = $this->view(Error::withMessage('Invalid Content-Type'), Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+        if (count($validationErrors) > 0) {
+            $view = $this->view(Error::withMessageAndDetail("Invalid JSON Body supplied, please check the Documentation", $validationErrors[0]), Response::HTTP_BAD_REQUEST);
             return $this->handleView($view);
-        }
-        $content = $request->getContent();
-        if (empty($content)) {
-            $view = $this->view(Error::withMessage('No Body supplied, please check the Documentation'), Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
-            return $this->handleView($view);
-        }
-        $decode = json_decode($content);
-        if (empty($decode) || !is_object($decode) || empty($decode->uuid) || !is_array($decode->uuid)) {
-            $view = $this->view(Error::withMessage('Invalid JSON Body supplied, please check the Documentation'), Response::HTTP_BAD_REQUEST);
-            return $this->handleView($view);
-        }
-        foreach ($decode->uuid as $item) {
-            if (!is_string($item) || !Uuid::isValid($item)) {
-                $view = $this->view(Error::withMessage('Invalid UUIDs supplied'), Response::HTTP_BAD_REQUEST);
-                return $this->handleView($view);
-            }
         }
 
-        $user = $this->userRepository->findBy(['uuid' => $decode->uuid]);
+        $user = $this->userRepository->findBy(['uuid' => $search->uuid]);
 
         // TODO return 404 if at least one uuid was not found (remove duplicates and compare count)
         if ($user) {

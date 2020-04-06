@@ -28,11 +28,8 @@ class LoginService
         $this->passwordEncoder = $passwordEncoder;
     }
 
-    public function checkCredentials(array $credentials)
+    public function checkCredentials(string $email, string $password)
     {
-        $email = $credentials['email'];
-        $password = $credentials['password'];
-
         if (empty($email) || empty($password)) {
             return false;
         }
