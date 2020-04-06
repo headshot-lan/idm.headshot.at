@@ -7,6 +7,7 @@ use App\Form\RegistrationFormType;
 use App\Form\UserEditType;
 use App\Repository\UserRepository;
 use App\Service\LoginService;
+use App\Transfer\Error;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
@@ -163,7 +164,7 @@ class UserController extends AbstractFOSRestController
             $view->getContext()->setSerializeNull(true);
             $view->getContext()->addGroup('default');
         } else {
-            $view = $this->view(['message' => 'EMail and/or Password not found'], Response::HTTP_NOT_FOUND);
+            $view = $this->view(Error::withMessage('EMail and/or Password not found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);
@@ -193,11 +194,11 @@ class UserController extends AbstractFOSRestController
         }
 
         if ($user) {
-            $view = $this->view(['data' => $user]);
+            $view = $this->view($user);
             $view->getContext()->setSerializeNull(true);
             $view->getContext()->addGroup('default');
         } else {
-            $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+            $view = $this->view(Error::withMessage("User not found"), Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);
@@ -225,13 +226,13 @@ class UserController extends AbstractFOSRestController
             $this->em->flush();
 
             $user = $this->userRepository->findOneBy(['uuid' => $user->getUuid()]);
-            $view = $this->view(['data' => $user]);
+            $view = $this->view($user);
             $view->getContext()->setSerializeNull(true);
             $view->getContext()->addGroup('default');
 
             return $this->handleView($view);
         } else {
-            $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+            $view = $this->view(Error::withMessage("User not found"), Response::HTTP_NOT_FOUND);
 
             return $this->handleView($view);
         }
@@ -249,34 +250,35 @@ class UserController extends AbstractFOSRestController
         // UUID based Search
 
         if ('json' !== $request->getContentType()) {
-            $view = $this->view(['message' => 'Invalid Content-Type'], Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+            $view = $this->view(Error::withMessage('Invalid Content-Type'), Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
             return $this->handleView($view);
         }
         $content = $request->getContent();
         if (empty($content)) {
-            $view = $this->view(['message' => 'No Body supplied, please check the Documentation'], Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+            $view = $this->view(Error::withMessage('No Body supplied, please check the Documentation'), Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
             return $this->handleView($view);
         }
         $decode = json_decode($content);
         if (empty($decode) || !is_object($decode) || empty($decode->uuid) || !is_array($decode->uuid)) {
-            $view = $this->view(['message' => 'Invalid JSON Body supplied, please check the Documentation'], Response::HTTP_BAD_REQUEST);
+            $view = $this->view(Error::withMessage('Invalid JSON Body supplied, please check the Documentation'), Response::HTTP_BAD_REQUEST);
             return $this->handleView($view);
         }
         foreach ($decode->uuid as $item) {
             if (!is_string($item) || !Uuid::isValid($item)) {
-                $view = $this->view(['message' => 'Invalid UUIDs supplied'], Response::HTTP_BAD_REQUEST);
+                $view = $this->view(Error::withMessage('Invalid UUIDs supplied'), Response::HTTP_BAD_REQUEST);
                 return $this->handleView($view);
             }
         }
 
         $user = $this->userRepository->findBy(['uuid' => $decode->uuid]);
 
+        // TODO return 404 if at least one uuid was not found (remove duplicates and compare count)
         if ($user) {
-            $view = $this->view(['data' => $user]);
+            $view = $this->view($user);
             $view->getContext()->setSerializeNull(true);
             $view->getContext()->addGroup('default');
         } else {
-            $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+            $view = $this->view(Error::withMessage("User not found"), Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);
@@ -296,11 +298,11 @@ class UserController extends AbstractFOSRestController
         $user = $this->userRepository->matching($criteria);
 
         if ($user) {
-            $view = $this->view(['data' => $user]);
+            $view = $this->view($user);
             $view->getContext()->setSerializeNull(true);
             $view->getContext()->addGroup('default');
         } else {
-            $view = $this->view(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+            $view = $this->view(Error::withMessage("User not found"), Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);
