@@ -28,13 +28,12 @@ class ApiKeyService
         return $this->apiUserRepository->findAll();
     }
 
-    public function createApiKey(string $name, string $apikey, string $host)
+    public function createApiKey(string $name, string $apikey)
     {
 
         $apiuser = new ApiUser();
         $apiuser->setApiToken($apikey);
         $apiuser->setName($name);
-        $apiuser->setHost($host);
 
         try {
             $this->em->persist($apiuser);

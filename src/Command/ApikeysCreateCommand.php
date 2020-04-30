@@ -30,7 +30,6 @@ class ApikeysCreateCommand extends Command
             ->setDescription('Adds the specified APIKey to the allowed Keys')
             ->addArgument('name', InputArgument::REQUIRED, 'Name for the API Key')
             ->addArgument('apikey', InputArgument::REQUIRED, 'API Key')
-            ->addArgument('host', InputArgument::REQUIRED, 'Host')
         ;
     }
 
@@ -39,9 +38,8 @@ class ApikeysCreateCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $name = $input->getArgument('name');
         $apikey = $input->getArgument('apikey');
-        $host = $input->getArgument('host');
 
-        if ($this->apiKeyService->createApiKey($name, $apikey, $host)) {
+        if ($this->apiKeyService->createApiKey($name, $apikey)) {
             $io->success("API Key \"{$name}\" successfully created!");
         } else {
             $io->error("Could not create API Key \"{$name}\"");
