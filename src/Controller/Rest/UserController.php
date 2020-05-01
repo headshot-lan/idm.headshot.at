@@ -10,6 +10,7 @@ use App\Service\LoginService;
 use App\Transfer\Error;
 use App\Transfer\Login;
 use App\Transfer\Search;
+use App\Transfer\UserAvailability;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
@@ -93,6 +94,18 @@ class UserController extends AbstractFOSRestController
             // get Data from Form
             $user = $form->getData();
 
+            //Check if Email and Nickname are not already used
+            if ($this->userRepository->findOneByLowercase(['email' => $form->get('email')->getData()])) {
+                $view = $this->view(Error::withMessage('EMail exists already'), Response::HTTP_CONFLICT);
+
+                return $this->handleView($view);
+            }
+            if ($this->userRepository->findOneByLowercase(['nickname' => $form->get('nickname')->getData()])) {
+                $view = $this->view(Error::withMessage('Nickname exists already'), Response::HTTP_CONFLICT);
+
+                return $this->handleView($view);
+            }
+
             // encode the plain password
             $user->setPassword(
                 $passwordEncoder->encodePassword(
@@ -103,13 +116,11 @@ class UserController extends AbstractFOSRestController
 
             // set defaults in User
             $user->setStatus(1);
+            $user->setInfoMails(true);
             $user->setEmailConfirmed(false);
 
             $this->em->persist($user);
             $this->em->flush();
-
-            // send the confirmation Email
-            //TODO: send the confirmation Email
 
             // return the User Object
 
@@ -122,9 +133,9 @@ class UserController extends AbstractFOSRestController
             return $this->handleView($view);
         }
 
-        return $this->render('registration/register.html.twig', [
-            'registrationForm' => $form->createView(),
-        ]);
+        $view = $this->view(Error::withMessageAndDetail('Invalid JSON Body supplied, please check the Documentation', $form->getErrors(true, false)), Response::HTTP_BAD_REQUEST);
+
+        return $this->handleView($view);
     }
 
     /**
@@ -292,6 +303,35 @@ class UserController extends AbstractFOSRestController
             $view->getContext()->addGroup('default');
         } else {
             $view = $this->view(Error::withMessage("User not found"), Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->handleView($view);
+    }
+
+    /**
+     * Checks availability of EMail and/or Nickname.
+     *
+     * @Rest\Post("/check")
+     * @ParamConverter("userAvailability", converter="fos_rest.request_body")
+     */
+    public function checkAvailabilityAction(UserAvailability $userAvailability, ConstraintViolationListInterface $validationErrors)
+    {
+        if (count($validationErrors) > 0) {
+            $view = $this->view(Error::withMessageAndDetail('Invalid JSON Body supplied, please check the Documentation', $validationErrors[0]), Response::HTTP_BAD_REQUEST);
+
+            return $this->handleView($view);
+        }
+
+        if ('email' == $userAvailability->mode) {
+            $user = $this->userRepository->findOneByLowercase(['email' => $userAvailability->name]);
+        } elseif ('nickname' == $userAvailability->mode) {
+            $user = $this->userRepository->findOneByLowercase(['nickname' => $userAvailability->name]);
+        }
+
+        if ($user) {
+            $view = $this->view(null, Response::HTTP_NO_CONTENT);
+        } else {
+            $view = $this->view(null, Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);

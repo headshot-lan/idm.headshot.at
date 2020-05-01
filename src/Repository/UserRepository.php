@@ -36,6 +36,37 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->_em->flush();
     }
 
+    /**
+     * Returns one User.
+     *
+     * @param array
+     *
+     * @return User|null Returns a Clan object or null if none could be found
+     */
+    public function findOneByLowercase(array $criteria): ?User
+    {
+        $qb = $this->createQueryBuilder('u');
+        $qb
+            ->select('u');
+
+        $i = 0;
+        foreach ($criteria as $k => $v) {
+            $v = strtolower($v);
+            if (0 === $i) {
+                $qb->where($qb->expr()->like("LOWER(u.{$k})", ":{$k}"));
+            } else {
+                $qb->andWhere($qb->expr()->like("LOWER(u.{$k})", ":{$k}"));
+            }
+            $qb->setParameter($k, $v);
+
+            ++$i;
+        }
+
+        $query = $qb->getQuery();
+
+        return $query->getOneOrNullResult();
+    }
+
     // /**
     //  * @return User[] Returns an array of User objects
     //  */
