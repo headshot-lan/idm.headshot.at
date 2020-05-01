@@ -126,7 +126,7 @@ class UserController extends AbstractFOSRestController
 
             $user = $this->userRepository->findOneBy(['email' => $user->getEMail()]);
 
-            $view = $this->view($user);
+            $view = $this->view($user, RESPONSE::HTTP_CREATED);
             $view->getContext()->setSerializeNull(true);
             $view->getContext()->addGroup('default');
 
