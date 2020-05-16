@@ -12,6 +12,26 @@ final class Search
      *      @Assert\NotBlank,
      *      @Assert\Uuid(strict=false)
      * })
+     * @var array|null
      */
     public $uuid = [];
+
+    /**
+     * @Assert\Type(type="string")
+     * @Assert\NotBlank(allowNull=true)
+     * @var string
+     */
+    public $nickname;
+
+    /**
+     * @Assert\Type(type="boolean")
+     * @var boolean|null
+     */
+    public $superadmin;
+
+    /**
+     * @Assert\Type(type="boolean")
+     * @var boolean|null
+     */
+    public $newsletter;
 }

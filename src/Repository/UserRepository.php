@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\User;
+use App\Transfer\Search;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -41,58 +42,38 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      *
      * @param array
      *
-     * @return User|null Returns a Clan object or null if none could be found
+     * @return User|null Returns an User object or null if none could be found
      */
-    public function findOneByLowercase(array $criteria): ?User
+    public function findOneCaseInsensitive(array $criteria): ?User
     {
         $qb = $this->createQueryBuilder('u');
-        $qb
-            ->select('u');
 
-        $i = 0;
         foreach ($criteria as $k => $v) {
             $v = strtolower($v);
-            if (0 === $i) {
-                $qb->where($qb->expr()->like("LOWER(u.{$k})", ":{$k}"));
-            } else {
-                $qb->andWhere($qb->expr()->like("LOWER(u.{$k})", ":{$k}"));
-            }
-            $qb->setParameter($k, $v);
-
-            ++$i;
+            $qb->andWhere($qb->expr()->like("LOWER(u.{$k})", ":{$k}"))->setParameter($k, $v);
         }
 
         $query = $qb->getQuery();
-
         return $query->getOneOrNullResult();
     }
 
-    // /**
-    //  * @return User[] Returns an array of User objects
-    //  */
-    /*
-    public function findByExampleField($value)
+    public function findBySearch(Search $search)
     {
-        return $this->createQueryBuilder('u')
-            ->andWhere('u.exampleField = :val')
-            ->setParameter('val', $value)
-            ->orderBy('u.id', 'ASC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult()
-        ;
+        $qb = $this->createQueryBuilder('u');
+        if (!empty($search->uuid)) {
+            $qb->andWhere('u.uuid in (:uuids)')->setParameter('uuids', $search->uuid);
+        }
+        if (!is_null($search->nickname)) {
+            $qb->andWhere('u.nickname = :nick')->setParameter('nick', $search->nickname);
+        }
+        if (!is_null($search->superadmin)) {
+            $qb->andWhere('u.isSuperadmin = :su')->setParameter('su', $search->superadmin);
+        }
+        if (!is_null($search->newsletter)) {
+            $qb->andWhere('u.infoMails = :mail')->setParameter('mail', $search->newsletter);
+        }
+        // TODO add sort and paging
+        $query = $qb->getQuery();
+        return $query->getResult();
     }
-    */
-
-    /*
-    public function findOneBySomeField($value): ?User
-    {
-        return $this->createQueryBuilder('u')
-            ->andWhere('u.exampleField = :val')
-            ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-    }
-    */
 }

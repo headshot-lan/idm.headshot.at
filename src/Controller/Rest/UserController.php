@@ -17,7 +17,6 @@ use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\Annotations\NamePrefix;
 use FOS\RestBundle\Controller\Annotations\Prefix;
-use Ramsey\Uuid\Uuid;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Swagger\Annotations as SWG;
 use Symfony\Component\HttpFoundation\Request;
@@ -95,12 +94,12 @@ class UserController extends AbstractFOSRestController
             $user = $form->getData();
 
             //Check if Email and Nickname are not already used
-            if ($this->userRepository->findOneByLowercase(['email' => $form->get('email')->getData()])) {
+            if ($this->userRepository->findOneCaseInsensitive(['email' => $form->get('email')->getData()])) {
                 $view = $this->view(Error::withMessage('EMail exists already'), Response::HTTP_CONFLICT);
 
                 return $this->handleView($view);
             }
-            if ($this->userRepository->findOneByLowercase(['nickname' => $form->get('nickname')->getData()])) {
+            if ($this->userRepository->findOneCaseInsensitive(['nickname' => $form->get('nickname')->getData()])) {
                 $view = $this->view(Error::withMessage('Nickname exists already'), Response::HTTP_CONFLICT);
 
                 return $this->handleView($view);
@@ -270,17 +269,12 @@ class UserController extends AbstractFOSRestController
             return $this->handleView($view);
         }
 
-        $user = $this->userRepository->findBy(['uuid' => $search->uuid]);
+        $user = $this->userRepository->findBySearch($search);
 
-        // TODO return 404 if at least one uuid was not found (remove duplicates and compare count)
-        if ($user) {
-            $view = $this->view($user);
-            $view->getContext()->setSerializeNull(true);
-            $view->getContext()->addGroup('default');
-        } else {
-            $view = $this->view(Error::withMessage("User not found"), Response::HTTP_NOT_FOUND);
-        }
-
+        $view = $this->view($user);
+        $view->getContext()
+            ->setSerializeNull(true)
+            ->addGroup('default');
         return $this->handleView($view);
     }
 
@@ -323,9 +317,9 @@ class UserController extends AbstractFOSRestController
         }
 
         if ('email' == $userAvailability->mode) {
-            $user = $this->userRepository->findOneByLowercase(['email' => $userAvailability->name]);
+            $user = $this->userRepository->findOneCaseInsensitive(['email' => $userAvailability->name]);
         } elseif ('nickname' == $userAvailability->mode) {
-            $user = $this->userRepository->findOneByLowercase(['nickname' => $userAvailability->name]);
+            $user = $this->userRepository->findOneCaseInsensitive(['nickname' => $userAvailability->name]);
         }
 
         if ($user) {
