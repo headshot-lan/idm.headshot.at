@@ -76,4 +76,18 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $query = $qb->getQuery();
         return $query->getResult();
     }
+
+    public function findAllActiveQueryBuilder(string $filter = null)
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->orderBy('u.nickname')
+            ->where('u.status > 0');
+
+        if (!empty($filter)) {
+            $qb->andWhere('u.nickname like :q')
+                ->setParameter('q', $filter."%");
+        }
+
+        return $qb;
+    }
 }
