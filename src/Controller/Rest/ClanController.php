@@ -167,7 +167,7 @@ class ClanController extends AbstractFOSRestController
 
                 return $this->handleView($view);
             }
-            $clanname = $this->clanRepository->findOneByLowercase(['clanname' => $form->get('name')->getData()]);
+            $clanname = $this->clanRepository->findOneByLowercase(['name' => $form->get('name')->getData()]);
             if ($clanname->getUuid() !== $clan->getUuid()) {
                 $view = $this->view(Error::withMessage('Clanname already in use'), Response::HTTP_BAD_REQUEST);
 
