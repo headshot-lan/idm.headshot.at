@@ -364,9 +364,14 @@ class ClanController extends AbstractFOSRestController
         $admins = $this->userClanRepository->findAllAdminsByClanUuid($clan->getUuid());
         $admincount = count($admins);
 
+        $adminarray = [];
+        foreach ($admins as $admin) {
+            $adminarray[] = $admin->getUser()->getUuid();
+        }
+
         if ($users) {
             foreach ($users as $user) {
-                if (true === $clanMemberRemove->strict && $admincount <= 1) {
+                if (true === $clanMemberRemove->strict && $admincount <= 1 && in_array($user->getUuid(), $adminarray)) {
                     // StrictMode for non-Admin Requests, so you cannot remove the last Owner
                     $view = $this->view(Error::withMessageAndDetail('You cannot remove the last Admin of the Clan', $user->getUuid()), Response::HTTP_BAD_REQUEST);
 
