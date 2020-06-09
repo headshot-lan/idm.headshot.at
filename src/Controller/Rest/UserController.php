@@ -12,7 +12,6 @@ use App\Transfer\Login;
 use App\Transfer\PaginationCollection;
 use App\Transfer\Search;
 use App\Transfer\UserAvailability;
-use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
