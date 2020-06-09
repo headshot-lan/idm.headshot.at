@@ -76,17 +76,11 @@ class ClanRepository extends ServiceEntityRepository
             ->innerJoin('c.users', 'userclan')
             ->innerJoin('userclan.user', 'u');
 
-        $i = 0;
         foreach ($criteria as $k => $v) {
             $v = strtolower($v);
-            if (0 === $i) {
-                $qb->where($qb->expr()->like("LOWER(c.{$k})", ":{$k}"));
-            } else {
-                $qb->andWhere($qb->expr()->like("LOWER(c.{$k})", ":{$k}"));
-            }
+            $qb->andWhere($qb->expr()->like("LOWER(c.{$k})", ":{$k}"));
             $qb->setParameter($k, $v);
 
-            ++$i;
         }
 
         $query = $qb->getQuery();
