@@ -131,13 +131,13 @@ class ClanController extends AbstractFOSRestController
      * Returns a single Clanobject.
      *
      * @Rest\Get("/{search}", requirements= {"search"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
-     * @Rest\QueryParam(name="all", nullable=true)
+     * @Rest\QueryParam(name="all", requirements="[0-1]", default="0")
      *
      * @return Response
      */
     public function getClanAction(string $search, ParamFetcher $paramFetcher)
     {
-        if ('true' === $paramFetcher->get('all')) {
+        if (1 === intval($paramFetcher->get('all'))) {
             $clan = $this->clanRepository->findOneBy(['uuid' => $search]);
         } else {
             $clan = $this->clanRepository->findOneWithActiveUsersByUuid($search);
