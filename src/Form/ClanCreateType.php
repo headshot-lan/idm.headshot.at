@@ -26,9 +26,6 @@ class ClanCreateType extends AbstractType
             ->add('description')
             ->add('user', TextType::class, [
                 'mapped' => false,
-                'constraints' => [
-                    new NotBlank(),
-                ],
             ])
         ;
     }

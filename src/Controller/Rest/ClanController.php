@@ -88,22 +88,24 @@ class ClanController extends AbstractFOSRestController
             // encode the plain password
             $clan->setJoinPassword(password_hash($form->get('joinPassword')->getData(), PASSWORD_ARGON2ID));
 
-            // add Creator as Admin and Member
-            $user = $this->userRepository->findOneBy(['uuid' => $form->get('user')->getData()]);
+            // add Creator as Admin and Member if set
+            if (null !== $form->get('user')->getData()) {
+                $user = $this->userRepository->findOneBy(['uuid' => $form->get('user')->getData()]);
 
-            if ($user instanceof User) {
-                $userclan = new UserClan();
-                $userclan->setClan($clan);
-                $userclan->setUser($user);
-                $userclan->setAdmin(true);
+                if ($user instanceof User) {
+                    $userclan = new UserClan();
+                    $userclan->setClan($clan);
+                    $userclan->setUser($user);
+                    $userclan->setAdmin(true);
 
-                $this->em->persist($clan);
-                $this->em->persist($userclan);
-                $this->em->flush();
-            } else {
-                $view = $this->view(Error::withMessage('Supplied User could not be found'), Response::HTTP_BAD_REQUEST);
+                    $this->em->persist($clan);
+                    $this->em->persist($userclan);
+                    $this->em->flush();
+                } else {
+                    $view = $this->view(Error::withMessage('Supplied User could not be found'), Response::HTTP_BAD_REQUEST);
 
-                return $this->handleView($view);
+                    return $this->handleView($view);
+                }
             }
 
             // return the Clan Object
@@ -226,10 +228,9 @@ class ClanController extends AbstractFOSRestController
      */
     public function removeClanAction(Clan $clan)
     {
-
         $clanusers = $this->userClanRepository->findBy(['clan' => $clan]);
 
-        if($clanusers) {
+        if ($clanusers) {
             foreach ($clanusers as $clanuser) {
                 $this->em->remove($clanuser);
             }
@@ -385,7 +386,6 @@ class ClanController extends AbstractFOSRestController
                         --$admincount;
                     }
                     $this->em->remove($clanuser);
-
                 } else {
                     $view = $this->view(Error::withMessageAndDetail('User is not a Member of the Clan', $user->getUuid()), Response::HTTP_BAD_REQUEST);
 
