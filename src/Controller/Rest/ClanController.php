@@ -106,6 +106,9 @@ class ClanController extends AbstractFOSRestController
 
                     return $this->handleView($view);
                 }
+            } else {
+                $this->em->persist($clan);
+                $this->em->flush();
             }
 
             // return the Clan Object
