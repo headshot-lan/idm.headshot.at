@@ -19,6 +19,7 @@ use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\Annotations\NamePrefix;
 use FOS\RestBundle\Controller\Annotations\Prefix;
+use FOS\RestBundle\Request\ParamFetcher;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -130,12 +131,17 @@ class ClanController extends AbstractFOSRestController
      * Returns a single Clanobject.
      *
      * @Rest\Get("/{search}", requirements= {"search"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
+     * @Rest\QueryParam(name="all", requirements="bool", nullable=true)
      *
      * @return Response
      */
-    public function getClanAction(string $search)
+    public function getClanAction(string $search, ParamFetcher $paramFetcher)
     {
-        $clan = $this->clanRepository->findOneWithActiveUsersByUuid($search);
+        if ($paramFetcher->get('all')) {
+            $clan = $this->clanRepository->findOneBy(['uuid' => $search]);
+        } else {
+            $clan = $this->clanRepository->findOneWithActiveUsersByUuid($search);
+        }
 
         if ($clan) {
             $view = $this->view($clan);
