@@ -281,7 +281,8 @@ class ClanController extends AbstractFOSRestController
             $qb = $this->clanRepository->findAllWithActiveUsersQueryBuilder();
         }
 
-        $pager = new Pagerfanta(new DoctrineORMAdapter($qb));
+        //set useOutputWalker to false otherwise we cannot Paginate Entities with INNER/LEFT Joins
+        $pager = new Pagerfanta(new DoctrineORMAdapter($qb, true, false));
         $pager->setMaxPerPage($limit);
         $pager->setCurrentPage($page);
 
