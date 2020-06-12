@@ -275,10 +275,10 @@ class ClanController extends AbstractFOSRestController
 
         if ('list' == $request->query->get('select')) {
             // Get all Clans but without the User Relations
-            $qb = $this->clanRepository->findAllWithoutUserRelationsQueryBuilder();
+            $qb = $this->clanRepository->findAllWithoutUserRelationsQueryBuilder($filter);
         } else {
             // Get all Clans
-            $qb = $this->clanRepository->findAllWithActiveUsersQueryBuilder();
+            $qb = $this->clanRepository->findAllWithActiveUsersQueryBuilder($filter);
         }
 
         //set useOutputWalker to false otherwise we cannot Paginate Entities with INNER/LEFT Joins
