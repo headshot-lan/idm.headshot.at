@@ -103,32 +103,37 @@ class ClanRepository extends ServiceEntityRepository
         return $query->execute();
     }
 
-    // /**
-    //  * @return Clan[] Returns an array of Clan objects
-    //  */
-    /*
-    public function findByExampleField($value)
+    public function findAllWithoutUserRelationsQueryBuilder(string $filter = null)
     {
-        return $this->createQueryBuilder('c')
-            ->andWhere('c.exampleField = :val')
-            ->setParameter('val', $value)
-            ->orderBy('c.id', 'ASC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult()
-        ;
-    }
-    */
+        $qb = $this->createQueryBuilder('c')
+            ->orderBy('c.name');
 
-    /*
-    public function findOneBySomeField($value): ?Clan
-    {
-        return $this->createQueryBuilder('c')
-            ->andWhere('c.exampleField = :val')
-            ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
+        $qb->select('c.clantag', 'c.createdAt', 'c.description', 'c.modifiedAt', 'c.name', 'c.uuid', 'c.website');
+
+        if (!empty($filter)) {
+            $qb->andWhere('LOWER(c.name) LIKE LOWER(:q)')
+                ->setParameter('q', "%".$filter."%");
+        }
+
+        return $qb;
     }
-    */
+
+    public function findAllWithActiveUsersQueryBuilder(string $filter = null)
+    {
+        $qb = $this->createQueryBuilder('c');
+
+        $qb
+            ->select('u', 'c', 'userclan')
+            ->innerJoin('c.users', 'userclan')
+            ->innerJoin('userclan.user', 'u')
+            ->where($qb->expr()->gte('u.status', 1))
+            ->orderBy('c.name');
+
+        if (!empty($filter)) {
+            $qb->andWhere('LOWER(c.name) LIKE LOWER(:q)')
+                ->setParameter('q', "%".$filter."%");
+        }
+
+        return $qb;
+    }
 }

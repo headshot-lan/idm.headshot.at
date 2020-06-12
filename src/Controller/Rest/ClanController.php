@@ -14,12 +14,15 @@ use App\Transfer\ClanAvailability;
 use App\Transfer\ClanMemberAdd;
 use App\Transfer\ClanMemberRemove;
 use App\Transfer\Error;
+use App\Transfer\PaginationCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\Annotations\NamePrefix;
 use FOS\RestBundle\Controller\Annotations\Prefix;
 use FOS\RestBundle\Request\ParamFetcher;
+use Pagerfanta\Adapter\DoctrineORMAdapter;
+use Pagerfanta\Pagerfanta;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -254,27 +257,48 @@ class ClanController extends AbstractFOSRestController
     }
 
     /**
-     * Returns all Clanobjects.
+     * Returns all Clan Objects.
      *
      * @Rest\Get("")
+     * @Rest\QueryParam(name="page", requirements="\d+", default="1")
+     * @Rest\QueryParam(name="limit", requirements="\d+", default="10")
+     * @Rest\QueryParam(name="q", default="")
+     * @param Request $request
+     * @param ParamFetcher $fetcher
+     * @return Response
      */
-    public function getClansAction(Request $request)
+    public function getClansAction(Request $request, ParamFetcher $fetcher)
     {
+        $page = intval($fetcher->get('page'));
+        $limit = intval($fetcher->get('limit'));
+        $filter = $fetcher->get('q');
+
         if ('list' == $request->query->get('select')) {
             // Get all Clans but without the User Relations
-            $clans = $this->clanRepository->findAllWithoutUserRelations();
+            $qb = $this->clanRepository->findAllWithoutUserRelationsQueryBuilder();
         } else {
             // Get all Clans
-            $clans = $this->clanRepository->findAllWithActiveUsers();
+            $qb = $this->clanRepository->findAllWithActiveUsersQueryBuilder();
         }
 
-        if ($clans) {
-            $view = $this->view($clans);
-            $view->getContext()->setSerializeNull(true);
-            $view->getContext()->addGroup('clanview');
-        } else {
-            $view = $this->view(Error::withMessage('No Clans found'), Response::HTTP_NOT_FOUND);
+        $pager = new Pagerfanta(new DoctrineORMAdapter($qb));
+        $pager->setMaxPerPage($limit);
+        $pager->setCurrentPage($page);
+
+        $clans = array();
+        foreach ($pager->getCurrentPageResults() as $clan) {
+            $clans[] = $clan;
         }
+
+        $collection = new PaginationCollection(
+            $clans,
+            $pager->getNbResults()
+        );
+
+        $view = $this->view($collection);
+        $view->getContext()->setSerializeNull(true);
+        $view->getContext()->addGroup('dto');
+        $view->getContext()->addGroup('clanview');
 
         return $this->handleView($view);
     }
