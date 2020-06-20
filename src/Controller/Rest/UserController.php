@@ -118,7 +118,6 @@ class UserController extends AbstractFOSRestController
 
             // set defaults in User
             $user->setStatus(1);
-            $user->setInfoMails(true);
             $user->setEmailConfirmed(false);
 
             $this->em->persist($user);

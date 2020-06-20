@@ -34,6 +34,7 @@ class RegistrationFormType extends AbstractType
                     ]),
                 ],
             ])
+            ->add('infoMails')
             ->add('nickname')
             ->add('firstname')
             ->add('surname')
