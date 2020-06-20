@@ -30,6 +30,7 @@ class UserEditType extends AbstractType
             ->add('hardware')
             ->add('infoMails')
             ->add('statements')
+            ->add('birthdate')
         ;
     }
 

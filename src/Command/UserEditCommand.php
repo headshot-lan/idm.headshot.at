@@ -42,7 +42,8 @@ class UserEditCommand extends Command
             ->addOption('city', null, InputOption::VALUE_REQUIRED, 'Edit City')
             ->addOption('country', null, InputOption::VALUE_REQUIRED, 'Edit Country')
             ->addOption('phone', null, InputOption::VALUE_REQUIRED, 'Edit Phone')
-            ->addOption('gender', null, InputOption::VALUE_REQUIRED, 'Edit Gender');
+            ->addOption('gender', null, InputOption::VALUE_REQUIRED, 'Edit Gender')
+            ->addOption('birthdate', null, InputOption::VALUE_REQUIRED, 'Edit Birthdate');
         $this
             ->addOption('website', null, InputOption::VALUE_REQUIRED, 'Edit Website')
             ->addOption('steamAccount', null, InputOption::VALUE_REQUIRED, 'Edit steamAccount')

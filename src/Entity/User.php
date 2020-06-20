@@ -166,6 +166,11 @@ class User implements UserInterface
      */
     private $clans;
 
+    /**
+     * @ORM\Column(type="date", nullable=true)
+     */
+    private $birthdate;
+
     public function getEmail(): ?string
     {
         return $this->email;
@@ -473,6 +478,18 @@ class User implements UserInterface
     public function getClans(): Collection
     {
         return $this->clans;
+    }
+
+    public function getBirthdate(): ?\DateTimeInterface
+    {
+        return $this->birthdate;
+    }
+
+    public function setBirthdate(?\DateTimeInterface $birthdate): self
+    {
+        $this->birthdate = $birthdate;
+
+        return $this;
     }
 
 }
