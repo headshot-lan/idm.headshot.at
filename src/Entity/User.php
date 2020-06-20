@@ -47,7 +47,7 @@ class User implements UserInterface
     private $password;
 
     /**
-     * @ORM\Column(type="string", length=255, unique=true)
+     * @ORM\Column(type="string", length=255, unique=false)
      * @Groups({"default", "clanview"})
      */
     private $nickname;
@@ -143,7 +143,7 @@ class User implements UserInterface
     private $modifiedAt;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
+     * @ORM\Column(type="string", length=4096, nullable=true)
      * @Groups("default")
      */
     private $hardware;
@@ -155,7 +155,7 @@ class User implements UserInterface
     private $infoMails;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
+     * @ORM\Column(type="string", length=4096, nullable=true)
      * @Groups("default")
      */
     private $statements;
