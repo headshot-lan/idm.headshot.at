@@ -31,7 +31,9 @@ class UserEditType extends AbstractType
             ->add('hardware')
             ->add('infoMails')
             ->add('statements')
-            ->add('birthdate', BirthdayType::class)
+            ->add('birthdate', BirthdayType::class, [
+                'required' => false,
+            ])
         ;
     }
 
