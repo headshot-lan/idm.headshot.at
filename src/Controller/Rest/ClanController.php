@@ -176,13 +176,13 @@ class ClanController extends AbstractFOSRestController
 
             // Check if the ClanName or Tag are already used
             $clantag = $this->clanRepository->findOneByLowercase(['clantag' => $form->get('clantag')->getData()]);
-            if ($clantag->getUuid() !== $clan->getUuid()) {
+            if (null !== $clantag && $clantag->getUuid() !== $clan->getUuid()) {
                 $view = $this->view(Error::withMessage('ClanTag already in use'), Response::HTTP_BAD_REQUEST);
 
                 return $this->handleView($view);
             }
             $clanname = $this->clanRepository->findOneByLowercase(['name' => $form->get('name')->getData()]);
-            if ($clanname->getUuid() !== $clan->getUuid()) {
+            if (null !== $clanname && $clanname->getUuid() !== $clan->getUuid()) {
                 $view = $this->view(Error::withMessage('Clanname already in use'), Response::HTTP_BAD_REQUEST);
 
                 return $this->handleView($view);
