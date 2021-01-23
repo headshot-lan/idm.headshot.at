@@ -11,6 +11,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\BrowserKit\AbstractBrowser;
+use Symfony\Component\Security\Core\Encoder\MessageDigestPasswordEncoder;
+use Symfony\Component\Security\Core\Encoder\SodiumPasswordEncoder;
 
 abstract class AbstractControllerTest extends WebTestCase
 {
@@ -30,14 +32,13 @@ abstract class AbstractControllerTest extends WebTestCase
         $this->manager = $kernel->getContainer()
             ->get('doctrine')
             ->getManager();
-        $encoder = $kernel->getContainer()
-            ->get('password_encoder');
+
         $this->executor = new ORMExecutor($this->manager, new ORMPurger());
 
         // Run the schema update tool using our entity metadata
         $schemaTool = new SchemaTool($this->manager);
         $schemaTool->updateSchema($this->manager->getMetadataFactory()->getAllMetadata());
-        $this->loadFixture(new AppFixtures($encoder));
+        $this->loadFixture(new AppFixtures());
 
         self::ensureKernelShutdown();
         $this->client = static::createClient([], [

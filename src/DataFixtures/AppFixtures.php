@@ -10,20 +10,13 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Ramsey\Uuid\Uuid;
 use NumberToWords\NumberToWords;
-use Symfony\Component\Security\Core\Encoder\EncoderFactoryInterface;
+use Symfony\Component\Security\Core\Encoder\SodiumPasswordEncoder;
 
 class AppFixtures extends Fixture
 {
-    private EncoderFactoryInterface $encoderFactory;
-
-    public function __construct(EncoderFactoryInterface $encoder)
-    {
-        $this->encoderFactory = $encoder;
-    }
-
     public function load(ObjectManager $manager)
     {
-        $encoder = $this->encoderFactory->getEncoder(User::class);
+        $encoder = new SodiumPasswordEncoder();
 
         $numberToWords = new NumberToWords();
         $numberTransformer = $numberToWords->getNumberTransformer('de');

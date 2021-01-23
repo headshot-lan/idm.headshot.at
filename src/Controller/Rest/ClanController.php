@@ -152,7 +152,8 @@ class ClanController extends AbstractFOSRestController
             return $this->handleView($view);
         }
 
-        $new->setJoinPassword($this->encoderFactory->encodePassword($new->getJoinPassword(), null));
+        $encoder = $this->encoderFactory->getEncoder(Clan::class);
+        $new->setJoinPassword($encoder->encodePassword($new->getJoinPassword(), null));
 
         $this->em->persist($new);
         $this->em->flush();
