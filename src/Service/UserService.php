@@ -5,41 +5,40 @@ namespace App\Service;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
 
 class UserService
 {
-    /**
-     * @var EntityManagerInterface
-     */
-    private $em;
-    /**
-     * @var UserRepository
-     */
-    private $userRepository;
-    /**
-     * @var UserPasswordEncoderInterface
-     */
-    private $passwordEncoder;
+    private EntityManagerInterface $em;
+    private UserRepository $userRepository;
+    private PasswordEncoderInterface $passwordEncoder;
 
-    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, UserPasswordEncoderInterface $passwordEncoder)
+    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, PasswordEncoderInterface $passwordEncoder)
     {
         $this->em = $entityManager;
         $this->userRepository = $userRepository;
         $this->passwordEncoder = $passwordEncoder;
     }
 
-    public function listUser($searchParameter = null, $searchValue = null)
+    public function listUser($searchParameter = null, $searchValue = null, $disabled = false)
     {
+        if ($disabled)
+            $this->em->getFilters()->disable('userFilter');
+
         if ('uuid' === $searchParameter) {
-            return $this->userRepository->findBy(['uuid' => $searchValue]);
+            $result = $this->userRepository->findBy(['uuid' => $searchValue]);
         } elseif ('externId' === $searchParameter) {
-            return $this->userRepository->findBy(['externId' => $searchValue]);
+            $result = $this->userRepository->findBy(['externId' => $searchValue]);
         } elseif ('email' === $searchParameter) {
-            return $this->userRepository->findBy(['email' => $searchValue]);
+            $result = $this->userRepository->findBy(['email' => $searchValue]);
         } else {
-            return $this->userRepository->findAll();
+            $result = $this->userRepository->findAll();
         }
+
+        if ($disabled)
+            $this->em->getFilters()->enable('userFilter');
+
+        return $result;
     }
 
     public function editUser($userdata)
@@ -129,21 +128,28 @@ class UserService
     public function enableUser(string $uuid)
     {
         try {
+            $this->em->getFilters()->disable('userFilter');
+
             // fetches the UserEntity from the Repository and enables it
             $user = $this->userRepository->findOneBy(['uuid' => $uuid]);
             $user->setStatus(1);
+            $this->em->persist($user);
             $this->em->flush();
 
             return $user;
         } catch (\Exception $exception) {
             // TODO: return actual Exception
             return null;
+        } finally {
+            $this->em->getFilters()->enable('userFilter');
         }
     }
 
     public function disableUser(string $uuid)
     {
         try {
+            $this->em->getFilters()->disable('userFilter');
+
             // fetches the UserEntity from the Repository and disables it
             $user = $this->userRepository->findOneBy(['uuid' => $uuid]);
             $user->setStatus(-1);
@@ -153,6 +159,8 @@ class UserService
         } catch (\Exception $exception) {
             // TODO: return actual Exception
             return null;
+        } finally {
+            $this->em->getFilters()->enable('userFilter');
         }
     }
 
@@ -169,9 +177,7 @@ class UserService
         $user->setNickname($nickname);
         $user->setStatus(1);
         $user->setEmailConfirmed($confirmed);
-        $user->setPassword(
-            $this->passwordEncoder->encodePassword($user, $password)
-        );
+        $user->setPassword($this->passwordEncoder->encodePassword($password, null));
 
         if ($infoMails) {
             if ('true' === $infoMails || true === $infoMails) {
@@ -212,5 +218,32 @@ class UserService
     public function getUser(string $uuid)
     {
         return $this->userRepository->findOneBy(['uuid' => $uuid]);
+    }
+
+    public function checkCredentials(string $email, string $password)
+    {
+        if (empty($email) || empty($password)) {
+            return false;
+        }
+
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+
+        if (empty($user)) {
+            return false;
+        }
+
+        $valid = $this->passwordEncoder->isPasswordValid($user->getPassword(), $password, null);
+        if ($this->passwordEncoder->needsRehash($user->getPassword())) {
+            //Rehash legacy Password if needed
+            $user->setPassword($this->passwordEncoder->encodePassword($password, null));
+            $this->em->flush();
+        }
+
+        if ($valid) {
+            return $user;
+        } else {
+            // User or Password false
+            return false;
+        }
     }
 }

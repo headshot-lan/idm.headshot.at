@@ -5,231 +5,219 @@ namespace App\Controller\Rest;
 use App\Entity\Clan;
 use App\Entity\User;
 use App\Entity\UserClan;
-use App\Form\ClanCreateType;
-use App\Form\ClanEditType;
 use App\Repository\ClanRepository;
 use App\Repository\UserClanRepository;
 use App\Repository\UserRepository;
-use App\Transfer\ClanAvailability;
-use App\Transfer\ClanMemberAdd;
-use App\Transfer\ClanMemberRemove;
+use App\Serializer\UserClanNormalizer;
+use App\Service\ClanService;
 use App\Transfer\Error;
+use App\Transfer\AuthObject;
 use App\Transfer\PaginationCollection;
+use App\Transfer\UuidObject;
+use App\Transfer\ValidationError;
 use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
-use FOS\RestBundle\Controller\Annotations\NamePrefix;
-use FOS\RestBundle\Controller\Annotations\Prefix;
 use FOS\RestBundle\Request\ParamFetcher;
-use Pagerfanta\Adapter\DoctrineORMAdapter;
+use Pagerfanta\Doctrine\ORM\QueryAdapter;
 use Pagerfanta\Pagerfanta;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
-use Symfony\Component\HttpFoundation\Request;
+use Swagger\Annotations as SWG;
+use Nelmio\ApiDocBundle\Annotation\Model;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
  * Class ClanController.
  *
- * @Prefix("/clans")
- * @NamePrefix("rest_clans_")
+ * @Rest\Route("/clans")
  */
 class ClanController extends AbstractFOSRestController
 {
-    /**
-     * @var EntityManagerInterface
-     */
     private EntityManagerInterface $em;
-    /**
-     * @var ClanRepository
-     */
+    private ClanService $clanService;
     private ClanRepository $clanRepository;
-    /**
-     * @var UserRepository
-     */
     private UserRepository $userRepository;
-    /**
-     * @var UserClanRepository
-     */
     private UserClanRepository $userClanRepository;
+    private PasswordEncoderInterface $passwordEncoder;
 
-    public function __construct(EntityManagerInterface $entityManager, ClanRepository $clanRepository, UserRepository $userRepository, UserClanRepository $userClanRepository)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        ClanService $clanService,
+        ClanRepository $clanRepository,
+        UserRepository $userRepository,
+        UserClanRepository $userClanRepository,
+        PasswordEncoderInterface $passwordEncoder
+    ){
         $this->em = $entityManager;
+        $this->clanService = $clanService;
         $this->clanRepository = $clanRepository;
         $this->userRepository = $userRepository;
         $this->userClanRepository = $userClanRepository;
+        $this->passwordEncoder = $passwordEncoder;
+    }
+
+    private function handleValidiationErrors(ConstraintViolationListInterface $errors)
+    {
+        if (count($errors) == 0)
+            return null;
+
+        $error = $errors[0];
+        if ($error->getConstraint() instanceof UniqueEntity){
+            return $this->view(ValidationError::withProperty($error->getPropertyPath(), 'UniqueEntity'), Response::HTTP_CONFLICT);
+        } else {
+            return $this->view(ValidationError::withProperty($error->getPropertyPath(), 'Assert'), Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Returns a single Clan object.
+     *
+     * @SWG\Response(
+     *     response=200,
+     *     description="Returns the Clan",
+     *     schema=@SWG\Schema(type="object", ref=@Model(type=\App\Entity\Clan::class, groups={"read"}))
+     * )
+     * @SWG\Response(
+     *     response=404,
+     *     description="Returns if the clan does not exitst"
+     * )
+     * @SWG\Parameter(
+     *     name="uuid",
+     *     type="string",
+     *     in="path",
+     *     description="the UUID of the clan to query",
+     *     required=true,
+     *     format="uuid"
+     * )
+     * @SWG\Tag(name="Clan")
+     *
+     * @Rest\Get("/{uuid}", requirements= {"uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
+     * @ParamConverter()
+     *
+     * @Rest\QueryParam(name="depth", requirements="\d+", allowBlank=false, default="2")
+     */
+    public function getClanAction(Clan $clan, ParamFetcher $fetcher)
+    {
+        $depth = intval($fetcher->get('depth'));
+        $view = $this->view($clan);
+        $view->getContext()->setAttribute(UserClanNormalizer::DEPTH, $depth);
+        return $this->handleView($view);
     }
 
     /**
      * Creates a Clan.
      *
+     * @SWG\Response(
+     *     response=201,
+     *     description="The edited clan",
+     *     schema=@SWG\Schema(type="object", ref=@Model(type=\App\Entity\Clan::class, groups={"read"}))
+     * )
+     * @SWG\Response(
+     *     response=400,
+     *     description="Returns if the body was invalid"
+     * )
+     * @SWG\Response(
+     *     response=409,
+     *     description="Returns if the body was invalid"
+     * )
+     * @SWG\Parameter(
+     *     name="body",
+     *     in="body",
+     *     description="the updated clan field as JSON",
+     *     required=true,
+     *     format="application/json",
+     *     schema=@SWG\Schema(type="object", ref=@Model(type=\App\Entity\Clan::class, groups={"write"}))
+     * )
+     * @SWG\Tag(name="Clan")
+     *
      * @Rest\Post("")
+     * @ParamConverter("new", converter="fos_rest.request_body",
+     *     options={
+     *      "deserializationContext": {"allow_extra_attributes": false},
+     *      "validator": {"groups": {"Transfer", "Create", "Unique"} }
+     *     })
      */
-    public function createClanAction(Request $request)
+    public function createClanAction(Clan $new, ConstraintViolationListInterface $validationErrors)
     {
-        $clan = new Clan();
-
-        $form = $this->createForm(ClanCreateType::class, $clan);
-        $form->submit($request->request->all());
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            // get Data from Form
-            $clan = $form->getData();
-
-            //Check if ClanName and ClanTag are not already used
-            if ($this->clanRepository->findOneByLowercase(['name' => $form->get('name')->getData()])) {
-                $view = $this->view(Error::withMessage('ClanName exists already'), Response::HTTP_CONFLICT);
-
-                return $this->handleView($view);
-            }
-            if ($this->clanRepository->findOneByLowercase(['clantag' => $form->get('clantag')->getData()])) {
-                $view = $this->view(Error::withMessage('ClanTag exists already'), Response::HTTP_CONFLICT);
-
-                return $this->handleView($view);
-            }
-
-            // encode the plain password
-            $clan->setJoinPassword(password_hash($form->get('joinPassword')->getData(), PASSWORD_ARGON2ID));
-
-            // add Creator as Admin and Member if set
-            if (null !== $form->get('user')->getData()) {
-                $user = $this->userRepository->findOneBy(['uuid' => $form->get('user')->getData()]);
-
-                if ($user instanceof User) {
-                    $userclan = new UserClan();
-                    $userclan->setClan($clan);
-                    $userclan->setUser($user);
-                    $userclan->setAdmin(true);
-
-                    $this->em->persist($clan);
-                    $this->em->persist($userclan);
-                    $this->em->flush();
-                } else {
-                    $view = $this->view(Error::withMessage('Supplied User could not be found'), Response::HTTP_BAD_REQUEST);
-
-                    return $this->handleView($view);
-                }
+        if (count($validationErrors) > 0) {
+            $error = $validationErrors[0];
+            if ($error->getConstraint() instanceof UniqueEntity){
+                $view = $this->view(Error::withMessageAndDetail("There is already an object with the same unique values", $error), Response::HTTP_CONFLICT);
             } else {
-                $this->em->persist($clan);
-                $this->em->flush();
+                $view = $this->view(Error::withMessageAndDetail("Invalid JSON Body supplied, please check the Documentation", $error), Response::HTTP_BAD_REQUEST);
             }
-
-            // return the Clan Object
-            $clan = $this->clanRepository->findOneBy(['uuid' => $clan->getUuid()]);
-
-            $view = $this->view($clan, Response::HTTP_CREATED);
-            $view->getContext()->setSerializeNull(true);
-            $view->getContext()->addGroup('default');
-
             return $this->handleView($view);
         }
 
-        $view = $this->view(Error::withMessageAndDetail('Invalid JSON Body supplied, please check the Documentation', $form->getErrors(true, false)), Response::HTTP_BAD_REQUEST);
+        $new->setJoinPassword($this->passwordEncoder->encodePassword($new->getJoinPassword(), null));
 
+        $this->em->persist($new);
+        $this->em->flush();
+
+        $view = $this->view($new, Response::HTTP_CREATED);
         return $this->handleView($view);
     }
 
     /**
-     * Returns a single Clanobject.
+     * Edits a clan.
      *
-     * @Rest\Get("/{search}", requirements= {"search"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
-     * @Rest\QueryParam(name="all", requirements="[0-1]", default="0")
-     *
-     * @return Response
-     */
-    public function getClanAction(string $search, ParamFetcher $paramFetcher)
-    {
-        if (1 === intval($paramFetcher->get('all'))) {
-            $clan = $this->clanRepository->findOneBy(['uuid' => $search]);
-        } else {
-            $clan = $this->clanRepository->findOneWithActiveUsersByUuid($search);
-        }
-
-        if ($clan) {
-            $view = $this->view($clan);
-            $view->getContext()->setSerializeNull(true);
-            $view->getContext()->addGroup('clanview');
-        } else {
-            $view = $this->view(Error::withMessage('Clan not found'), Response::HTTP_NOT_FOUND);
-        }
-
-        return $this->handleView($view);
-    }
-
-    /**
-     * Edits a Clan.
-     *
-     * Edits a Clan
+     * @SWG\Response(
+     *     response=200,
+     *     description="The edited clan",
+     *     schema=@SWG\Schema(type="object", ref=@Model(type=\App\Entity\Clan::class, groups={"read"}))
+     * )
+     * @SWG\Response(
+     *     response=404,
+     *     description="Returns if the clan does not exitst"
+     * )
+     * @SWG\Response(
+     *     response=400,
+     *     description="Returns if the body was invalid"
+     * )
+     * @SWG\Parameter(
+     *     name="uuid",
+     *     type="string",
+     *     in="path",
+     *     description="the UUID of the clan to modify",
+     *     required=true,
+     *     format="uuid"
+     * )
+     * @SWG\Parameter(
+     *     name="body",
+     *     in="body",
+     *     description="the updated clan field as JSON",
+     *     required=true,
+     *     format="application/json",
+     *     schema=@SWG\Schema(type="object", ref=@Model(type=\App\Entity\Clan::class, groups={"write"}))
+     * )
+     * @SWG\Tag(name="Clan")
      *
      * @Rest\Patch("/{uuid}", requirements= {"uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
-     * @ParamConverter()
+     * @ParamConverter("clan", class="App\Entity\Clan")
+     * @ParamConverter("update", converter="fos_rest.request_body",
+     *     options={
+     *      "deserializationContext": {"allow_extra_attributes": false},
+     *      "validator": {"groups": {"Transfer", "Unique"} },
+     *      "attribute_to_populate": "clan",
+     *     })
      */
-    public function editClanAction(Clan $clan, Request $request)
+    public function editClanAction(Clan $update, ConstraintViolationListInterface $validationErrors)
     {
-        $form = $this->createForm(ClanEditType::class, $clan);
-
-        // Specify clearMissing on false to support partial editing
-        $form->submit($request->request->all(), false);
-        if ($form->isSubmitted() && $form->isValid()) {
-            $formclan = $form->getData();
-
-            // Check if the ClanName or Tag are already used
-            $clantag = $this->clanRepository->findOneByLowercase(['clantag' => $form->get('clantag')->getData()]);
-            if (null !== $clantag && $clantag->getUuid() !== $clan->getUuid()) {
-                $view = $this->view(Error::withMessage('ClanTag already in use'), Response::HTTP_BAD_REQUEST);
-
-                return $this->handleView($view);
-            }
-            $clanname = $this->clanRepository->findOneByLowercase(['name' => $form->get('name')->getData()]);
-            if (null !== $clanname && $clanname->getUuid() !== $clan->getUuid()) {
-                $view = $this->view(Error::withMessage('Clanname already in use'), Response::HTTP_BAD_REQUEST);
-
-                return $this->handleView($view);
-            }
-
-            // Only set the Password when it's not empty
-            if (null != $form->get('joinPassword')->getData() && '' != $form->get('joinPassword')->getData()) {
-                $formclan->setJoinPassword(password_hash($form->get('joinPassword')->getData(), PASSWORD_ARGON2ID));
-            }
-            // Set Admins to the specified List
-            if (is_array($form->get('admins')->getData()) && !empty($form->get('admins')->getData())) {
-                // First remove all the Admins that are no longer in the List
-                foreach ($this->userClanRepository->findAllAdminsByClanUuid($clan->getUuid()) as $admin) {
-                    if (!array_key_exists((string) $admin->getUser()->getUuid(), $form->get('admins')->getData())) {
-                        $admin->setAdmin(false);
-                        $this->em->persist($admin);
-                    }
-                }
-                // Add the new Admins
-                foreach ($form->get('admins')->getData() as $admin) {
-                    $clanuser = $this->userClanRepository->findOneClanUserByUuid($formclan->getUuid(), $admin);
-                    if ($clanuser) {
-                        if (true != $clanuser->getAdmin()) {
-                            $clanuser->setAdmin(true);
-                            $this->em->persist($clanuser);
-                        }
-                    } else {
-                        $view = $this->view(Error::withMessageAndDetail('User UUID is not Member of the Clan', $admin), Response::HTTP_BAD_REQUEST);
-
-                        return $this->handleView($view);
-                    }
-                }
-            }
-            $this->em->persist($clan);
-            $this->em->flush();
-
-            $formclan = $this->clanRepository->findOneBy(['uuid' => $formclan->getUuid()]);
-            $view = $this->view($formclan);
-            $view->getContext()->setSerializeNull(true);
-            $view->getContext()->addGroup('clanview');
-
-            return $this->handleView($view);
-        } else {
-            $view = $this->view(Error::withMessageAndDetail('Invalid JSON Body supplied, please check the Documentation', $form->getErrors(true, false)), Response::HTTP_BAD_REQUEST);
-
+        if ($view = $this->handleValidiationErrors($validationErrors)) {
             return $this->handleView($view);
         }
+
+        if ($this->passwordEncoder->needsRehash($update->getJoinPassword())) {
+            $update->setJoinPassword($this->passwordEncoder->encodePassword($update->getJoinPassword(), null));
+        }
+
+        $this->em->persist($update);
+        $this->em->flush();
+
+        return $this->handleView($this->view($update));
     }
 
     /**
@@ -240,49 +228,44 @@ class ClanController extends AbstractFOSRestController
      */
     public function removeClanAction(Clan $clan)
     {
-        $clanusers = $this->userClanRepository->findBy(['clan' => $clan]);
-
-        if ($clanusers) {
-            foreach ($clanusers as $clanuser) {
-                $this->em->remove($clanuser);
-            }
-        }
-
         $this->em->remove($clan);
         $this->em->flush();
 
         $view = $this->view(null, Response::HTTP_NO_CONTENT);
-
         return $this->handleView($view);
     }
 
     /**
-     * Returns all Clan Objects.
+     * Returns all Clan objects with filter.
      *
      * @Rest\Get("")
      * @Rest\QueryParam(name="page", requirements="\d+", default="1")
      * @Rest\QueryParam(name="limit", requirements="\d+", default="10")
-     * @Rest\QueryParam(name="q", default="")
-     * @param Request $request
-     * @param ParamFetcher $fetcher
-     * @return Response
+     * @Rest\QueryParam(name="filter")
+     * @Rest\QueryParam(name="sort", requirements="(asc|desc)", map=true)
+     * @Rest\QueryParam(name="exact", requirements="(true|false)", allowBlank=false, default="false")
+     * @Rest\QueryParam(name="depth", requirements="\d+", allowBlank=false, default="2")
      */
-    public function getClansAction(Request $request, ParamFetcher $fetcher)
+    public function getClansAction(ParamFetcher $fetcher)
     {
         $page = intval($fetcher->get('page'));
         $limit = intval($fetcher->get('limit'));
-        $filter = $fetcher->get('q');
+        $filter = $fetcher->get('filter');
+        $sort = $fetcher->get('sort');
+        $exact = $fetcher->get('exact');
+        $depth = intval($fetcher->get('depth'));
 
-        if ('list' == $request->query->get('select')) {
-            // Get all Clans but without the User Relations
-            $qb = $this->clanRepository->findAllWithoutUserRelationsQueryBuilder($filter);
+        $sort = is_array($sort) ? $sort : (empty($sort) ? [] : [$sort => 'asc']);
+        $exact = $exact === 'true';
+
+        if (is_array($filter)) {
+            $qb = $this->clanRepository->findAllQueryBuilder($filter, $sort, $exact);
         } else {
-            // Get all Clans
-            $qb = $this->clanRepository->findAllWithActiveUsersQueryBuilder($filter);
+            $qb = $this->clanRepository->findAllSimpleQueryBuilder($filter, $sort, $exact);
         }
 
         //set useOutputWalker to false otherwise we cannot Paginate Entities with INNER/LEFT Joins
-        $pager = new Pagerfanta(new DoctrineORMAdapter($qb, true, false));
+        $pager = new Pagerfanta(new QueryAdapter($qb, true, false));
         $pager->setMaxPerPage($limit);
         $pager->setCurrentPage($page);
 
@@ -297,170 +280,290 @@ class ClanController extends AbstractFOSRestController
         );
 
         $view = $this->view($collection);
-        $view->getContext()->setSerializeNull(true);
-        $view->getContext()->addGroup('dto');
-        $view->getContext()->addGroup('clanview');
-
+        $view->getContext()->setAttribute(UserClanNormalizer::DEPTH, $depth);
         return $this->handleView($view);
     }
 
     /**
      * Adds a User to a Clan.
      *
-     * @Rest\Patch("/{uuid}/users", requirements= {"uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
+     * @Rest\Post("/{uuid}/users", requirements= {"uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
      * @ParamConverter("clan", options={"mapping": {"uuid": "uuid"}})
-     * @ParamConverter("clanMemberAdd", converter="fos_rest.request_body")
+     * @ParamConverter("user_uuid", converter="fos_rest.request_body")
      */
-    public function addMemberAction(Clan $clan, ClanMemberAdd $clanMemberAdd, ConstraintViolationListInterface $validationErrors)
+    public function addMemberAction(Clan $clan, UuidObject $user_uuid, ConstraintViolationListInterface $validationErrors)
     {
-        if (count($validationErrors) > 0) {
-            $view = $this->view(Error::withMessageAndDetail('Invalid JSON Body supplied, please check the Documentation', $validationErrors[0]), Response::HTTP_BAD_REQUEST);
-
+        if ($view = $this->handleValidiationErrors($validationErrors)) {
             return $this->handleView($view);
         }
 
-        if (null != $clanMemberAdd->joinPassword) {
-            if (!password_verify($clanMemberAdd->joinPassword, $clan->getJoinPassword())) {
-                $view = $this->view(Error::withMessage('Invalid Clan joinPassword'), Response::HTTP_FORBIDDEN);
-
-                return $this->handleView($view);
-            }
-        }
-
-        $users = $this->userRepository->findBy(['uuid' => $clanMemberAdd->users]);
-
-        if (count($clanMemberAdd->users) != count($users)) {
-            $actualusers = [];
-            foreach ($users as $user) {
-                $actualusers[] = $user->getUuid();
-            }
-            $missingusers = array_diff($clanMemberAdd->users, $actualusers);
-
-            $view = $this->view(Error::withMessageAndDetail('Not all Users were found', implode(',', $missingusers)), Response::HTTP_BAD_REQUEST);
-
+        $user = $this->userRepository->findOneBy(['uuid' => $user_uuid->uuid]);
+        if (empty($user)) {
+            $view = $this->view(Error::withMessage('User not found'), Response::HTTP_NOT_FOUND);
             return $this->handleView($view);
         }
 
-        if ($users) {
-            foreach ($users as $user) {
-                if ($this->userClanRepository->findOneClanUserByUuid($clan->getUuid(), $user->getUuid())) {
-                    $view = $this->view(Error::withMessageAndDetail('User is already a Member of the Clan', $user->getUuid()), Response::HTTP_BAD_REQUEST);
-
-                    return $this->handleView($view);
-                } else {
-                    $clanuser = new UserClan();
-                    $clanuser->setUser($user);
-                    $clanuser->setClan($clan);
-
-                    $this->em->persist($clanuser);
-                }
-            }
-
-            $this->em->flush();
-
+        if ($this->UserJoin($clan, $user)) {
             $view = $this->view(null, Response::HTTP_NO_CONTENT);
         } else {
-            $view = $this->view(Error::withMessage('No Users were found'), Response::HTTP_BAD_REQUEST);
+            $view = $this->view(Error::withMessage('User already member'), Response::HTTP_OK);
+        }
+        return $this->handleView($view);
+    }
+
+    /**
+     * Adds a User to a Clan.
+     *
+     * @Rest\Post("/{uuid}/admins", requirements= {"uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
+     * @ParamConverter("clan", options={"mapping": {"uuid": "uuid"}})
+     * @ParamConverter("user_uuid", converter="fos_rest.request_body")
+     */
+    public function addAdminAction(Clan $clan, UuidObject $user_uuid, ConstraintViolationListInterface $validationErrors)
+    {
+        if ($view = $this->handleValidiationErrors($validationErrors)) {
+            return $this->handleView($view);
         }
 
+        $user = $this->userRepository->findOneBy(['uuid' => $user_uuid->uuid]);
+        if (empty($user)) {
+            $view = $this->view(Error::withMessage('User not found'), Response::HTTP_NOT_FOUND);
+            return $this->handleView($view);
+        }
+
+        if ($this->UserSetAdmin($clan, $user, true) || $this->UserJoin($clan, $user, true)) {
+            $view = $this->view(null, Response::HTTP_NO_CONTENT);
+        } else {
+            $view = $this->view(Error::withMessage('User already admin'), Response::HTTP_OK);
+        }
+        return $this->handleView($view);
+    }
+
+    /**
+     * Gets Users of Clan
+     *
+     * @Rest\Get("/{uuid}/users", requirements= {"uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
+     * @ParamConverter("clan", options={"mapping": {"uuid": "uuid"}})
+     *
+     * @Rest\QueryParam(name="depth", requirements="\d+", allowBlank=false, default="1")
+     */
+    public function getMemberAction(Clan $clan, ParamFetcher $fetcher)
+    {
+        $result = array();
+        foreach ($clan->getUsers() as $userClan) {
+            $result[] = $userClan->getUser();
+        }
+
+        $view = $this->view($result, Response::HTTP_OK);
+        $view->getContext()->setAttribute(UserClanNormalizer::DEPTH, intval($fetcher->get('depth')));
+        return $this->handleView($view);
+    }
+
+    /**
+     * Gets Users of Clan
+     *
+     * @Rest\Get("/{uuid}/admins", requirements= {"uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
+     * @ParamConverter("clan", options={"mapping": {"uuid": "uuid"}})
+     *
+     * @Rest\QueryParam(name="depth", requirements="\d+", allowBlank=false, default="1")
+     */
+    public function getAdminAction(Clan $clan, ParamFetcher $fetcher)
+    {
+        $result = array();
+        foreach ($clan->getUsers() as $userClan) {
+            if ($userClan->getAdmin())
+                $result[] = $userClan->getUser();
+        }
+
+        $view = $this->view($result, Response::HTTP_OK);
+        $view->getContext()->setAttribute(UserClanNormalizer::DEPTH, intval($fetcher->get('depth')));
         return $this->handleView($view);
     }
 
     /**
      * Removes a User from a Clan.
      *
-     * @Rest\Delete("/{uuid}/users", requirements= {"uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"})
+     * @Rest\Delete("/{uuid}/users/{user}", requirements= {
+     *     "uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+     *     "user"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"}
+     * )
      * @ParamConverter("clan", options={"mapping": {"uuid": "uuid"}})
-     * @ParamConverter("clanMemberRemove", converter="fos_rest.request_body")
+     * @ParamConverter("user", options={"mapping": {"user": "uuid"}})
      */
-    public function removeMemberAction(Clan $clan, ClanMemberRemove $clanMemberRemove, ConstraintViolationListInterface $validationErrors)
+    public function removeMemberAction(Clan $clan, User $user)
     {
-        if (count($validationErrors) > 0) {
-            $view = $this->view(Error::withMessageAndDetail('Invalid JSON Body supplied, please check the Documentation', $validationErrors[0]), Response::HTTP_BAD_REQUEST);
-
-            return $this->handleView($view);
-        }
-
-        $users = $this->userRepository->findBy(['uuid' => $clanMemberRemove->users]);
-
-        if (count($clanMemberRemove->users) != count($users)) {
-            $actualusers = [];
-            foreach ($users as $user) {
-                $actualusers[] = $user->getUuid();
-            }
-            $missingusers = array_diff($clanMemberRemove->users, $actualusers);
-
-            $view = $this->view(Error::withMessageAndDetail('Not all Users were found', implode(',', $missingusers)), Response::HTTP_BAD_REQUEST);
-
-            return $this->handleView($view);
-        }
-
-        // TODO: Only fetch Count for Admins instead of the whole Objects -> faster!
-        $admins = $this->userClanRepository->findAllAdminsByClanUuid($clan->getUuid());
-        $admincount = count($admins);
-
-        $adminarray = [];
-        foreach ($admins as $admin) {
-            $adminarray[] = $admin->getUser()->getUuid();
-        }
-
-        if ($users) {
-            foreach ($users as $user) {
-                if (true === $clanMemberRemove->strict && $admincount <= 1 && in_array($user->getUuid(), $adminarray)) {
-                    // StrictMode for non-Admin Requests, so you cannot remove the last Owner
-                    $view = $this->view(Error::withMessageAndDetail('You cannot remove the last Admin of the Clan', $user->getUuid()), Response::HTTP_BAD_REQUEST);
-
-                    return $this->handleView($view);
-                }
-
-                $clanuser = $this->userClanRepository->findOneClanUserByUuid($clan->getUuid(), $user->getUuid());
-
-                if ($clanuser) {
-                    if (true === $clanuser->getAdmin()) {
-                        --$admincount;
-                    }
-                    $this->em->remove($clanuser);
-                } else {
-                    $view = $this->view(Error::withMessageAndDetail('User is not a Member of the Clan', $user->getUuid()), Response::HTTP_BAD_REQUEST);
-
-                    return $this->handleView($view);
-                }
-            }
-
-            $this->em->flush();
-
+        if ($this->UserLeave($clan, $user)) {
             $view = $this->view(null, Response::HTTP_NO_CONTENT);
         } else {
-            $view = $this->view(Error::withMessage('No Users were found'), Response::HTTP_BAD_REQUEST);
+            $view = $this->view(Error::withMessage('User not member'), Response::HTTP_NOT_FOUND);
         }
-
         return $this->handleView($view);
     }
 
     /**
-     * Checks availability of Clanname and/or Clantag.
+     * Removes a Admin from a Clan.
      *
-     * @Rest\Post("/check")
-     * @ParamConverter("clanAvailability", converter="fos_rest.request_body")
+     * @Rest\Delete("/{uuid}/admins/{user}", requirements= {
+     *     "uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+     *     "user"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"}
+     * )
+     * @ParamConverter("clan", options={"mapping": {"uuid": "uuid"}})
+     * @ParamConverter("user", options={"mapping": {"user": "uuid"}})
      */
-    public function checkAvailabilityAction(ClanAvailability $clanAvailability, ConstraintViolationListInterface $validationErrors)
+    public function removeAdminAction(Clan $clan, User $user)
     {
-        if (count($validationErrors) > 0) {
-            $view = $this->view(Error::withMessageAndDetail('Invalid JSON Body supplied, please check the Documentation', $validationErrors[0]), Response::HTTP_BAD_REQUEST);
+        if ($this->UserSetAdmin($clan, $user, false)) {
+            $view = $this->view(null, Response::HTTP_NO_CONTENT);
+        } else {
+            $view = $this->view(Error::withMessage('User not admin'), Response::HTTP_NOT_FOUND);
+        }
+        return $this->handleView($view);
+    }
 
+    /**
+     * Gets a User from a Clan.
+     *
+     * @Rest\Get("/{uuid}/users/{user}", requirements= {
+     *     "uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+     *     "user"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"}
+     * )
+     * @ParamConverter("clan", options={"mapping": {"uuid": "uuid"}})
+     * @ParamConverter("user", options={"mapping": {"user": "uuid"}})
+     */
+    public function getMemberOfClanAction(Clan $clan, User $user)
+    {
+        $user_ids = $clan->getUsers()
+            ->map(function (UserClan $uc) { return $uc->getUser()->getUuid(); })
+            ->toArray();
+        if (!in_array($user->getUuid(), $user_ids)) {
+            return $this->handleView($this->view(Error::withMessage("User not in clan"), Response::HTTP_NOT_FOUND));
+        }
+        return $this->redirectToRoute('app_rest_user_getuser', ["uuid" => $user->getUuid()]);
+    }
+
+    /**
+     * Gets a User from a Clan.
+     *
+     * @Rest\Get("/{uuid}/admins/{user}", requirements= {
+     *     "uuid"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+     *     "user"="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"}
+     * )
+     * @ParamConverter("clan", options={"mapping": {"uuid": "uuid"}})
+     * @ParamConverter("user", options={"mapping": {"user": "uuid"}})
+     */
+    public function getAdminOfClanAction(Clan $clan, User $user)
+    {
+        $user_ids = $clan->getUsers()
+            ->filter(function (UserClan $uc) { return $uc->getAdmin(); })
+            ->map(function (UserClan $uc) { return $uc->getUser()->getUuid(); })
+            ->toArray();
+        if (!in_array($user->getUuid(), $user_ids)) {
+            return $this->handleView($this->view(Error::withMessage("User not admin of clan"), Response::HTTP_NOT_FOUND));
+        }
+        return $this->redirectToRoute('app_rest_user_getuser', ["uuid" => $user->getUuid()]);
+    }
+
+    /**
+     * @param Clan $clan
+     * @param User $user
+     * @param bool $admin
+     * @return bool True if user was joined, false otherwise
+     */
+    private function UserJoin(Clan $clan, User $user, bool $admin = false): bool
+    {
+        foreach ($clan->getUsers() as $userClan) {
+            if ($userClan->getUser() === $user) {
+                return false;
+            }
+        }
+
+        $userClan = new UserClan();
+        $userClan->setClan($clan);
+        $userClan->setUser($user);
+        $userClan->setAdmin($admin);
+        $this->em->persist($userClan);
+        $this->em->flush();
+
+        return true;
+    }
+
+    /**
+     * @param Clan $clan
+     * @param User $user
+     * @return bool True if user was removed, false otherwise
+     */
+    private function UserLeave(Clan $clan, User $user): bool
+    {
+        foreach ($clan->getUsers() as $userClan) {
+            if ($userClan->getUser() === $user) {
+                $this->em->remove($userClan);
+                $this->em->flush();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param Clan $clan
+     * @param User $user
+     * @param bool $admin
+     * @return bool True if user is member and status was changed, false otherwise
+     */
+    private function UserSetAdmin(Clan $clan, User $user, bool $admin): bool
+    {
+        foreach ($clan->getUsers() as $userClan) {
+            if ($userClan->getUser() === $user) {
+                if ($admin === $userClan->getAdmin())
+                    return false;
+                $userClan->setAdmin($admin);
+                $this->em->persist($userClan);
+                $this->em->flush();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if the Clan credentials are correct
+     *
+     * Checks Username/Password against the Database and returns the user if credentials are valid
+     *
+     * @SWG\Response(
+     *     response=200,
+     *     description="Returns the Clan",
+     *     schema=@SWG\Schema(type="object", ref=@Model(type=\App\Entity\Clan::class, groups={"read"}))
+     * )
+     * @SWG\Response(
+     *     response=404,
+     *     description="Returns if no Name and/or Password could be found"
+     * )
+     * @SWG\Parameter(
+     *     name="body",
+     *     in="body",
+     *     description="credentials as JSON",
+     *     required=true,
+     *     format="application/json",
+     *     schema=@SWG\Schema(type="object", ref=@Model(type=\App\Transfer\AuthObject::class))
+     * )
+     * @SWG\Tag(name="Authorization")
+     *
+     * @Rest\Post("/authorize")
+     * @ParamConverter("auth", converter="fos_rest.request_body", options={"deserializationContext": {"allow_extra_attributes": false}})
+     */
+    public function postAuthorizeAction(AuthObject $auth, ConstraintViolationListInterface $validationErrors)
+    {
+        if ($view = $this->handleValidiationErrors($validationErrors)) {
             return $this->handleView($view);
         }
 
-        if ('clantag' == $clanAvailability->mode) {
-            $clan = $this->clanRepository->findOneByLowercase(['clantag' => $clanAvailability->name]);
-        } elseif ('clanname' == $clanAvailability->mode) {
-            $clan = $this->clanRepository->findOneByLowercase(['name' => $clanAvailability->name]);
-        }
+        //Check if User can login
+        $clan = $this->clanService->checkCredentials($auth->name, $auth->secret);
 
         if ($clan) {
-            $view = $this->view(null, Response::HTTP_NO_CONTENT);
+            $view = $this->view($clan);
         } else {
-            $view = $this->view(null, Response::HTTP_NOT_FOUND);
+            $view = $this->view(Error::withMessage('Invalid credentials'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->handleView($view);

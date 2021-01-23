@@ -10,42 +10,65 @@ use App\Repository\UserRepository;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Ramsey\Uuid\Uuid;
-use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
-
+use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
+use NumberToWords\NumberToWords;
 
 class AppFixtures extends Fixture
 {
     /**
-     * @var UserPasswordEncoderInterface
+     * @var PasswordEncoderInterface
      */
-    private UserPasswordEncoderInterface $encoder;
+    private PasswordEncoderInterface $encoder;
     /**
      * @var UserRepository
      */
     private UserRepository $userRepository;
 
-    public function __construct(UserPasswordEncoderInterface $encoder)
+    public function __construct(PasswordEncoderInterface $encoder)
     {
         $this->encoder = $encoder;
     }
 
     public function load(ObjectManager $manager)
     {
+        $numberToWords = new NumberToWords();
+        $numberTransformer = $numberToWords->getNumberTransformer('de');
+
         // create 20 Users
         for ($i = 0; $i < 20; ++$i) {
             $user = new User();
             $user->setNickname('User '.$i);
             $user->setEmail('user'.$i.'@localhost.local');
+            $user->setFirstname("User");
+            $user->setSurname(ucfirst($numberTransformer->toWords($i)));
             $user->setUuid(Uuid::fromInteger(strval($i)));
             $user->setStatus(1);
-            $user->setPassword($this->encoder->encodePassword($user, 'user'.$i));
-            $user->setEmailConfirmed(1 == mt_rand(0, 1));
-            $user->setInfoMails(1 == mt_rand(0, 1));
+            $user->setPassword($this->encoder->encodePassword('user'.$i, null));
+            $user->setEmailConfirmed(1 != $i % 5);
+            $user->setInfoMails(1 == ($i + 1) % 5);
+            $user->setPersonalDataLocked(1 == ($i + 1) % 7);
+            $user->setPersonalDataConfirmed(1 != ($i + 2) % 3);
             $user->setIsSuperadmin(false);
+            $user->setGender(1 == $i % 3 ? 'f' : 'm');
 
             $manager->persist($user);
         }
 
+        $manager->flush();
+
+        $ghost = new User();
+        $ghost->setUuid(Uuid::fromInteger(42));
+        $ghost->setNickname("DeletedUser");
+        $ghost->setFirstname("Deleted");
+        $ghost->setSurname("User");
+        $ghost->setStatus(-1);
+        $ghost->setEmail('ghost@localhost.local');
+        $ghost->setPassword($this->encoder->encodePassword('ghost', null));
+        $ghost->setEmailConfirmed(1);
+        $ghost->setInfoMails(true);
+        $ghost->setPersonalDataLocked(false);
+        $ghost->setPersonalDataConfirmed(false);
+        $manager->persist($ghost);
         $manager->flush();
 
         // assign Clans to Users
@@ -77,6 +100,13 @@ class AppFixtures extends Fixture
 
         $manager->persist($clan);
 
+        $userclan = new UserClan();
+        $userclan->setAdmin(false);
+        $userclan->setUser($ghost);
+        $userclan->setClan($clan);
+
+        $manager->persist($userclan);
+
         $clan = new Clan();
         $clan->setName('Clan 2');
         $clan->setClantag('CL2');
@@ -105,17 +135,28 @@ class AppFixtures extends Fixture
         $userclan->setClan($clan);
 
         $manager->persist($userclan);
+        $manager->persist($clan);
 
+        // create an empty clan
+        $clan = new Clan();
+        $clan->setName('Clan 3');
+        $clan->setClantag('CL3');
+        $clan->setUuid(Uuid::fromInteger(strval(1003)));
+        $clan->setJoinPassword(password_hash('clan3', PASSWORD_ARGON2ID));
         $manager->persist($clan);
 
         // create admin user
         $admin = new User();
         $admin->setNickname('Admin');
+        $admin->setFirstname('Ali');
+        $admin->setSurname('Admin');
         $admin->setEmail('admin@localhost.local');
         $admin->setStatus(1);
-        $admin->setPassword($this->encoder->encodePassword($admin, 'admin'));
-        $admin->setEmailConfirmed(1);
-        $admin->setInfoMails(false);
+        $admin->setPassword($this->encoder->encodePassword('admin', null));
+        $user->setEmailConfirmed(true);
+        $user->setInfoMails(false);
+        $user->setPersonalDataLocked(false);
+        $user->setPersonalDataConfirmed(false);
         $admin->setIsSuperadmin(true);
 
         $manager->persist($admin);

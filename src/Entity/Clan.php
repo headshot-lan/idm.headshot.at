@@ -9,98 +9,111 @@ use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\ClanRepository")
+ * @ORM\Table(name="clan")
  * @ORM\HasLifecycleCallbacks
+ *
+ * @UniqueEntity(fields={"name"}, groups={"Default", "Unique"}, message="There is already a clan with this name")
+ * @UniqueEntity(fields={"clantag"}, groups={"Default", "Unique"}, message="There is already a tag with this name")
  */
 class Clan
 {
     public function __construct()
     {
-        if (null === $this->uuid) {
-            $this->uuid = Uuid::uuid4();
-        }
-        $this->setCreatedAt(new \DateTime());
-        if (null == $this->getModifiedAt()) {
-            $this->setModifiedAt(new \DateTime());
-        }
         $this->users = new ArrayCollection();
     }
 
-    /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
-     */
-    private $id;
+    use EntityIdTrait;
 
     /**
-     * The internal primary identity key.
-     *
-     * @var UuidInterface
-     *
-     * @ORM\Column(type="uuid", unique=true)
-     * @Groups({"default", "clanview"})
-     * @Assert\NotBlank
-     */
-    protected $uuid;
-
-    /**
-     * @ORM\Column(type="string", length=255, unique=true)
-     * @Groups({"default", "clanview"})
-     * @Assert\NotBlank
+     * @ORM\Column(type="string", length=64, unique=true)
+     * @Assert\NotBlank(groups={"Default", "Create"})
+     * @Assert\Length(
+     *      min = 1,
+     *      max = 64,
+     *      minMessage = "The name must be at least {{ limit }} characters long",
+     *      maxMessage = "The name cannot be longer than {{ limit }} characters",
+     *      allowEmptyString="false",
+     *      groups = {"Default", "Transfer", "Create"}
+     * )
+     * @Groups({"read", "write"})
      */
     private $name;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\Length(
+     *      min = 6,
+     *      max = 128,
+     *      minMessage = "The password must be at least {{ limit }} characters long",
+     *      maxMessage = "The password cannot be longer than {{ limit }} characters",
+     *      allowEmptyString="false",
+     *      groups = {"Transfer", "Create"}
+     * )
+     * @Assert\NotBlank(groups={"Default", "Create"})
+     * @Groups({"write"})
      */
     private $joinPassword;
 
     /**
      * @ORM\Column(type="datetime")
-     * @Groups("clanview")
+     * @Groups({"read"})
      */
     private $createdAt;
 
     /**
      * @ORM\Column(type="datetime")
-     * @Groups("clanview")
+     * @Groups({"read"})
      */
     private $modifiedAt;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\UserClan", mappedBy="clan")
-     * @Groups("clanview")
+     * @ORM\OneToMany(
+     *     targetEntity="App\Entity\UserClan",
+     *     mappedBy="clan",
+     *     cascade={"all"},
+     * )
+     * @Groups({"read"})
      */
     private $users;
 
     /**
-     * @ORM\Column(type="string", length=24, unique=true)
-     * @Groups({"default", "clanview"})
-     * @Assert\NotBlank
+     * @ORM\Column(type="string", length=10, unique=true)
+     * @Assert\Length(
+     *      min = 1,
+     *      max = 10,
+     *      minMessage = "The clantag must be at least {{ limit }} characters long",
+     *      maxMessage = "The clantag cannot be longer than {{ limit }} characters",
+     *      allowEmptyString="false",
+     *      groups = {"Default", "Transfer", "Create"}
+     * )
+     * @Assert\NotBlank(groups={"Default", "Create"})
+     * @Groups({"read", "write"})
      */
     private $clantag;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups({"default", "clanview"})
-     * @Assert\Url()
+     * @Assert\Url(groups={"Default", "Transfer"})
+     * @Groups({"read", "write"})
      */
     private $website;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups({"default", "clanview"})
+     * @ORM\Column(type="string", length=4096, nullable=true)
+     * @Assert\Length(
+     *      max = 4096,
+     *      maxMessage = "The clan description cannot be longer than {{ limit }} characters",
+     *      groups = {"Default", "Transfer"}
+     * )
+     * @Groups({"read", "write"})
      */
     private $description;
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
 
     public function getName(): ?string
     {
@@ -158,26 +171,6 @@ class Clan
         return $this->users;
     }
 
-    public function getUuid(): UuidInterface
-    {
-        return $this->uuid;
-    }
-
-    public function setUuid(UuidInterface $uuid)
-    {
-        $this->uuid = $uuid;
-    }
-
-    /**
-     * @ORM\PrePersist()
-     * @ORM\PreUpdate()
-     */
-    public function updateModifiedAtDatetime()
-    {
-        // update the modified time
-        $this->setModifiedAt(new \DateTime());
-    }
-
     public function getClantag(): ?string
     {
         return $this->clantag;
@@ -214,4 +207,15 @@ class Clan
         return $this;
     }
 
+    /**
+     * @ORM\PrePersist()
+     * @ORM\PreUpdate()
+     */
+    public function updateModifiedDatetime() {
+        // update the modified time and creation time
+        $this->setModifiedAt(new \DateTime());
+        if ($this->getCreatedAt() === null) {
+            $this->setCreatedAt(new \DateTime());
+        }
+    }
 }

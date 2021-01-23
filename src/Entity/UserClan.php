@@ -7,7 +7,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="user_clan")
+ * @ORM\Table(name="gamer_clan")
  */
 class UserClan
 {
@@ -27,21 +27,18 @@ class UserClan
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User", inversedBy="clans")
-     * @ORM\JoinColumn(nullable=false)
-     * @Groups({"default2", "clanview"})
+     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE")
      */
     private $user;
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\Clan", inversedBy="users")
-     * @ORM\JoinColumn(nullable=false)
-     * @Groups("default")
+     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE")
      */
     private $clan;
 
     /**
      * @ORM\Column(type="boolean")
-     * @Groups({"default", "clanview"})
      */
     private $admin;
 

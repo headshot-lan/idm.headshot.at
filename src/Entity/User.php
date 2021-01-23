@@ -2,174 +2,206 @@
 
 namespace App\Entity;
 
+use DateTime;
+use DateTimeInterface;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
-use Ramsey\Uuid\Uuid;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Serializer\Annotation\Groups;
-
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
- * @ORM\Table(name="app_users")
+ * @ORM\Table(name="gamer")
  * @ORM\HasLifecycleCallbacks
  *
- * @UniqueEntity(fields={"email"}, message="There is already an account with this email")
+ * @UniqueEntity(fields={"email"}, groups={"Default", "Unique"}, repositoryMethod="findByCi", message="There is already an account with this email")
+ * @UniqueEntity(fields={"nickname"}, groups={"Default", "Unique"}, message="There is already an account with this nickname")
  */
-class User implements UserInterface
+class User
 {
     public function __construct()
     {
-        if (null === $this->uuid) {
-            $this->uuid = Uuid::uuid4();
-        }
-        $this->setRegisteredAt(new \DateTime());
-        if (null == $this->getModifiedAt()) {
-            $this->setModifiedAt(new \DateTime());
-        }
         $this->clans = new ArrayCollection();
     }
 
     use EntityIdTrait;
+    use HideableTrait;
 
     /**
-     * @ORM\Column(type="string", length=180, unique=true)
-     * @Groups({"default", "clanview"})
+     * @ORM\Column(type="string", length=320, unique=true)
+     * @Assert\NotBlank(groups={"Default", "Create"})
+     * @Assert\Email(groups={"Default", "Transfer", "Create"})
+     * @Groups({"read", "write"})
      */
     private $email;
 
     /**
+     * @ORM\Column(type="boolean")
+     * @Groups({"read", "write"})
+     */
+    private $emailConfirmed = false;
+
+    /**
+     * @ORM\Column(type="boolean")
+     * @Groups({"read", "write"})
+     */
+    private $infoMails = false;
+
+    /**
      * @var string The hashed password
      * @ORM\Column(type="string")
+     * @Assert\Length(
+     *      min = 6,
+     *      max = 128,
+     *      minMessage = "The password must be at least {{ limit }} characters long",
+     *      maxMessage = "The password cannot be longer than {{ limit }} characters",
+     *      allowEmptyString="false",
+     *      groups = {"Transfer", "Create"}
+     * )
+     * @Assert\NotBlank(groups={"Default", "Create"})
+     * @Groups({"write"})
      */
     private $password;
 
     /**
-     * @ORM\Column(type="string", length=255, unique=false)
-     * @Groups({"default", "clanview"})
+     * @ORM\Column(type="string", length=64, unique=true)
+     * @Assert\NotBlank(groups={"Default", "Create"})
+     * @Assert\Length(
+     *      min = 1,
+     *      max = 64,
+     *      minMessage = "The nickname must be at least {{ limit }} characters long",
+     *      maxMessage = "The nickname cannot be longer than {{ limit }} characters",
+     *      allowEmptyString="false",
+     *      groups = {"Default", "Transfer", "Create"}
+     * )
+     * @Groups({"read", "write"})
      */
     private $nickname;
 
     /**
-     * @ORM\Column(type="integer")
-     * @Groups({"default", "clanview"})
-     */
-    private $status;
-
-    /**
      * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
+     * @Groups({"read", "write"})
      */
     private $firstname;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
+     * @Groups({"read", "write"})
      */
     private $surname;
 
     /**
-     * @ORM\Column(type="integer", nullable=true)
-     * @Groups("default")
+     * @ORM\Column(type="date", nullable=true)
+     * @Assert\Date(groups={"Default", "Transfer"})
+     * @Groups({"read", "write"})
      */
-    private $postcode;
+    private $birthdate;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
-     */
-    private $city;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
-     */
-    private $street;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
-     */
-    private $country;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
-     */
-    private $phone;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
+     * @ORM\Column(type="string", length=1, nullable=true)
+     * @Assert\Choice({"m","f","x"}, groups={"Default", "Transfer"})
+     * @Groups({"read", "write"})
      */
     private $gender;
 
     /**
      * @ORM\Column(type="boolean")
-     * @Groups("default")
+     * @Groups({"read", "write"})
      */
-    private $emailConfirmed;
+    private $personalDataConfirmed = false;
 
     /**
      * @ORM\Column(type="boolean")
-     * @Groups("default")
+     * @Groups({"read", "write"})
+     */
+    private $personalDataLocked = false;
+
+    /**
+     * @ORM\Column(type="boolean")
+     * @Groups({"read"})
      */
     private $isSuperadmin = false;
 
     /**
+     * @ORM\Column(type="string", length=10, nullable=true)
+     * @Groups({"read", "write"})
+     */
+    private $postcode;
+
+    /**
      * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
+     * @Groups({"read", "write"})
+     */
+    private $city;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups({"read", "write"})
+     */
+    private $street;
+
+    /**
+     * @ORM\Column(type="string", length=2, nullable=true)
+     * @Assert\Country(groups={"Default", "Transfer"})
+     * @Groups({"read", "write"})
+     */
+    private $country;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     * @Groups({"read", "write"})
+     * @Assert\Regex("/^[+]?\d([ \/()]?\d)*$/", message="Invalid phone number format.", groups={"Default", "Transfer"})
+     */
+    private $phone;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     * @Assert\Url(groups={"Default", "Transfer"})
+     * @Groups({"read", "write"})
      */
     private $website;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
-     * @Groups("default")
+     * @Groups({"read", "write"})
      */
     private $steamAccount;
 
     /**
+     * @ORM\Column(type="string", length=4096, nullable=true)
+     * @Groups({"read", "write"})
+     */
+    private $hardware;
+
+    /**
+     * @ORM\Column(type="string", length=4096, nullable=true)
+     * @Groups({"read", "write"})
+     */
+    private $statements;
+
+    /**
      * @ORM\Column(type="datetime")
-     * @Groups("default")
+     * @Groups({"read"})
      */
     private $registeredAt;
 
     /**
      * @ORM\Column(type="datetime")
-     * @Groups("default")
+     * @Groups({"read"})
      */
     private $modifiedAt;
 
     /**
-     * @ORM\Column(type="string", length=4096, nullable=true)
-     * @Groups("default")
-     */
-    private $hardware;
-
-    /**
-     * @ORM\Column(type="boolean")
-     * @Groups("default")
-     */
-    private $infoMails;
-
-    /**
-     * @ORM\Column(type="string", length=4096, nullable=true)
-     * @Groups("default")
-     */
-    private $statements;
-
-    /**
-     * @ORM\OneToMany(targetEntity="App\Entity\UserClan", mappedBy="user")
-     * @Groups("default")
+     * @ORM\OneToMany(
+     *     targetEntity="App\Entity\UserClan",
+     *     mappedBy="user",
+     *     cascade={"all"},
+     * )
+     * @Groups({"read"})
      */
     private $clans;
-
-    /**
-     * @ORM\Column(type="date", nullable=true)
-     */
-    private $birthdate;
 
     public function getEmail(): ?string
     {
@@ -183,14 +215,14 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getStatus(): ?int
+    public function getNickname(): ?string
     {
-        return $this->status;
+        return $this->nickname;
     }
 
-    public function setStatus(int $status): self
+    public function setNickname(string $nickname): self
     {
-        $this->status = $status;
+        $this->nickname = $nickname;
 
         return $this;
     }
@@ -219,12 +251,24 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getPostcode(): ?int
+    public function isPersonalDataConfirmed(): ?bool
+    {
+        return $this->personalDataConfirmed;
+    }
+
+    public function setPersonalDataConfirmed(?bool $personalDataConfirmed): self
+    {
+        $this->personalDataConfirmed = $personalDataConfirmed;
+
+        return $this;
+    }
+
+    public function getPostcode(): ?string
     {
         return $this->postcode;
     }
 
-    public function setPostcode(int $postcode): self
+    public function setPostcode(string $postcode): self
     {
         $this->postcode = $postcode;
 
@@ -303,14 +347,14 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getNickname(): ?string
+    public function personalDataLocked(): ?bool
     {
-        return $this->nickname;
+        return $this->personalDataLocked;
     }
 
-    public function setNickname(string $nickname): self
+    public function setPersonalDataLocked(?bool $personalDataLocked): self
     {
-        $this->nickname = $nickname;
+        $this->personalDataLocked = $personalDataLocked;
 
         return $this;
     }
@@ -327,28 +371,6 @@ class User implements UserInterface
         return $this;
     }
 
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     * @Groups({"default", "clanview"})
-     */
-    public function getUsername(): string
-    {
-        return (string) $this->email;
-    }
-
-    /**
-     * @see UserInterface
-     */
-    public function getRoles(): array
-    {
-        return [];
-    }
-
-    /**
-     * @see UserInterface
-     */
     public function getPassword(): string
     {
         return (string) $this->password;
@@ -359,23 +381,6 @@ class User implements UserInterface
         $this->password = $password;
 
         return $this;
-    }
-
-    /**
-     * @see UserInterface
-     */
-    public function getSalt()
-    {
-        // not needed when using the "bcrypt" algorithm in security.yaml
-    }
-
-    /**
-     * @see UserInterface
-     */
-    public function eraseCredentials()
-    {
-        // If you store any temporary, sensitive data on the user, clear it here
-        // $this->plainPassword = null;
     }
 
     public function getWebsite(): ?string
@@ -402,24 +407,24 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getRegisteredAt(): ?\DateTimeInterface
+    public function getRegisteredAt(): ?DateTimeInterface
     {
         return $this->registeredAt;
     }
 
-    public function setRegisteredAt(\DateTimeInterface $registeredAt): self
+    public function setRegisteredAt(DateTimeInterface $registeredAt): self
     {
         $this->registeredAt = $registeredAt;
 
         return $this;
     }
 
-    public function getModifiedAt(): ?\DateTimeInterface
+    public function getModifiedAt(): ?DateTimeInterface
     {
         return $this->modifiedAt;
     }
 
-    public function setModifiedAt(\DateTimeInterface $modifiedAt): self
+    public function setModifiedAt(DateTimeInterface $modifiedAt): self
     {
         $this->modifiedAt = $modifiedAt;
 
@@ -463,33 +468,34 @@ class User implements UserInterface
     }
 
     /**
-     * @ORM\PrePersist()
-     * @ORM\PreUpdate()
-     */
-    public function updateModifiedAtDatetime()
-    {
-        // update the modified time
-        $this->setModifiedAt(new \DateTime());
-    }
-
-    /**
-     * @return Collection|UserClan[]
+     * @return Collection|UserClan[]|null
      */
     public function getClans(): Collection
     {
         return $this->clans;
     }
 
-    public function getBirthdate(): ?\DateTimeInterface
+    public function getBirthdate(): ?DateTimeInterface
     {
         return $this->birthdate;
     }
 
-    public function setBirthdate(?\DateTimeInterface $birthdate): self
+    public function setBirthdate(?DateTimeInterface $birthdate): self
     {
         $this->birthdate = $birthdate;
 
         return $this;
     }
 
+    /**
+     * @ORM\PrePersist()
+     * @ORM\PreUpdate()
+     */
+    public function updateModifiedDatetime() {
+        // update the modified time and creation time
+        $this->setModifiedAt(new DateTime());
+        if ($this->getRegisteredAt() === null) {
+            $this->setRegisteredAt(new DateTime());
+        }
+    }
 }

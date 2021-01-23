@@ -4,15 +4,17 @@ namespace App\Transfer;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class ClanAvailability
+final class AuthObject
 {
     /**
+     * @var string
      * @Assert\NotBlank()
      */
-    public $mode;
+    public string $name;
 
     /**
+     * @var string
      * @Assert\NotBlank()
      */
-    public $name;
+    public string $secret;
 }

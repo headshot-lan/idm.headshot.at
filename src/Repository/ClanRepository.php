@@ -3,8 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\Clan;
+use App\Helper\QueryHelper;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\ORM\QueryBuilder;
 
 /**
  * @method Clan|null find($id, $lockMode = null, $lockVersion = null)
@@ -14,124 +16,120 @@ use Doctrine\Common\Persistence\ManagerRegistry;
  */
 class ClanRepository extends ServiceEntityRepository
 {
+    use QueryHelper;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Clan::class);
     }
 
     /**
-     * Returns all Clans but only with active Users.
-     *
-     * @return Clan[] Returns an array of Clan objects
-     */
-    public function findAllWithActiveUsers(): array
-    {
-        $qb = $this->createQueryBuilder('c');
-        $qb
-            ->select('u', 'c', 'userclan')
-            ->innerJoin('c.users', 'userclan')
-            ->innerJoin('userclan.user', 'u')
-            ->where($qb->expr()->gte('u.status', 1));
-
-        $query = $qb->getQuery();
-
-        return $query->execute();
-    }
-
-    /**
-     * Returns one Clan but only with active Users.
-     *
-     * @param $uuid
-     *
-     * @return Clan|null Returns a Clan object or null if none could be found
-     */
-    public function findOneWithActiveUsersByUuid(string $uuid): ?Clan
-    {
-        $qb = $this->createQueryBuilder('c');
-        $qb
-            ->select('u', 'c', 'userclan')
-            ->innerJoin('c.users', 'userclan')
-            ->innerJoin('userclan.user', 'u')
-            ->where($qb->expr()->gte('u.status', 1))
-            ->andWhere($qb->expr()->eq('c.uuid', ':uuid'))
-            ->setParameter('uuid', $uuid);
-
-        $query = $qb->getQuery();
-
-        return $query->getOneOrNullResult();
-    }
-
-    /**
-     * Returns one Clan.
+     * Returns one Clan. Search case insensitive.
      *
      * @param array
      *
      * @return Clan|null Returns a Clan object or null if none could be found
      */
-    public function findOneByLowercase(array $criteria): ?Clan
+    public function findOneByCi(array $criteria): ?Clan
     {
+        $fields = $this->getEntityManager()->getClassMetadata(Clan::class)->getFieldNames();
+        $criteria = $this->filterArray($criteria, $fields);
+
         $qb = $this->createQueryBuilder('c');
-        $qb
-            ->select('u', 'c', 'userclan')
-            ->innerJoin('c.users', 'userclan')
-            ->innerJoin('userclan.user', 'u');
 
         foreach ($criteria as $k => $v) {
-            $v = strtolower($v);
-            $qb->andWhere($qb->expr()->like("LOWER(c.{$k})", ":{$k}"));
-            $qb->setParameter($k, $v);
-
+            $qb->andWhere($qb->expr()->eq("LOWER(c.{$k})", "LOWER(:{$k})"));
         }
+        $qb
+            ->setParameters($criteria)
+            ->setMaxResults(1);
 
-        $query = $qb->getQuery();
-
-        return $query->getOneOrNullResult();
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
     /**
-     * Returns all Clans but don't return Data from User Relations.
+     * Returns Clan objects. Search case insensitive.
      *
-     * @return Clan[] Returns an array of Clan objects
+     * @param array
+     *
+     * @return mixed Returns the list of found Clan objects.
      */
-    public function findAllWithoutUserRelations(): array
+    public function findByCi(array $criteria)
     {
+        $fields = $this->getEntityManager()->getClassMetadata(Clan::class)->getFieldNames();
+        $criteria = $this->filterArray($criteria, $fields);
+
         $qb = $this->createQueryBuilder('c');
-        $qb->select('c.clantag', 'c.createdAt', 'c.description', 'c.modifiedAt', 'c.name', 'c.uuid', 'c.website');
 
-        $query = $qb->getQuery();
+        foreach ($criteria as $k => $v) {
+            $qb->andWhere($qb->expr()->eq("LOWER(c.{$k})", "LOWER(:{$k})"));
+        }
+        $qb->setParameters($criteria);
 
-        return $query->execute();
+        return $qb->getQuery()->getResult();
     }
 
-    public function findAllWithoutUserRelationsQueryBuilder(string $filter = null)
+    public function findAllSimpleQueryBuilder(?string $filter = null, array $sort = [], bool $exact = false): QueryBuilder
     {
-        $qb = $this->createQueryBuilder('c')
-            ->orderBy('c.name');
+        $qb = $this->createQueryBuilder('c');
 
-        $qb->select('c.clantag', 'c.createdAt', 'c.description', 'c.modifiedAt', 'c.name', 'c.uuid', 'c.website');
+        $fields = $this->getEntityManager()->getClassMetadata(Clan::class)->getFieldNames();
+        $sort = $this->filterArray($sort, $fields, ['asc', 'desc']);
+
+        $parameter = $exact ?
+            $this->makeLikeParam($filter, "%s") :
+            $this->makeLikeParam($filter, "%%%s%%");
 
         if (!empty($filter)) {
-            $qb->andWhere('LOWER(c.name) LIKE LOWER(:q)')
-                ->setParameter('q', "%".$filter."%");
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    "LOWER(c.name) LIKE LOWER(:q) ESCAPE '!'",
+                    "LOWER(c.clantag) LIKE LOWER(:q) ESCAPE '!'",
+                )
+            )->setParameter('q', $parameter);
+        }
+
+        if (empty($sort)) {
+            $qb->orderBy('c.name');
+        } else {
+            foreach ($sort as $s => $d) {
+                $qb->addOrderBy('c.'.$s, $d);
+            }
         }
 
         return $qb;
     }
 
-    public function findAllWithActiveUsersQueryBuilder(string $filter = null)
+    public function findAllQueryBuilder(array $filter, array $sort = [], bool $exact = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('c');
 
-        $qb
-            ->select('u', 'c', 'userclan')
-            ->innerJoin('c.users', 'userclan')
-            ->innerJoin('userclan.user', 'u')
-            ->where($qb->expr()->gte('u.status', 1))
-            ->orderBy('c.name');
+        $parameter = [];
+        $criteria = [];
+        $fields = $this->getEntityManager()->getClassMetadata(Clan::class)->getFieldNames();
 
-        if (!empty($filter)) {
-            $qb->andWhere('LOWER(c.name) LIKE LOWER(:q)')
-                ->setParameter('q', "%".$filter."%");
+        $filter = $this->filterArray($filter, $fields);
+        $sort = $this->filterArray($sort, $fields, ['asc', 'desc']);
+
+        foreach ($filter as $field => $value) {
+            $parameter[$field] = $exact ?
+                $this->makeLikeParam($value, "%s") :
+                $this->makeLikeParam($value, "%%%s%%");
+            $criteria[] = $exact ?
+                "c.{$field} LIKE :{$field} ESCAPE '!'" :
+                "LOWER(c.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+        }
+
+        $qb
+            ->andWhere($qb->expr()->andX(...$criteria))
+            ->setParameters($parameter);
+
+        if (empty($sort)) {
+            $qb->orderBy('c.name');
+        } else {
+            foreach ($sort as $field => $dir) {
+                $qb->addOrderBy('c.'.$field, $dir);
+            }
         }
 
         return $qb;

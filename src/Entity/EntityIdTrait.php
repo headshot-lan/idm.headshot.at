@@ -3,32 +3,31 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Swagger\Annotations as SWG;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 trait EntityIdTrait
 {
     /**
      * The unique auto incremented primary key.
      *
-     * @var int|null
-     *
      * @ORM\Id
      * @ORM\Column(type="integer", options={"unsigned": true})
-     * @Groups({"default", "clanview"})
      * @ORM\GeneratedValue
+     * @Groups({"read"})
      */
     protected $id;
 
     /**
      * The internal primary identity key.
      *
-     * @var UuidInterface
-     *
      * @SWG\Property(type="string")
      * @ORM\Column(type="uuid", unique=true)
-     * @Groups({"default", "clanview"})
+     * @Assert\Uuid(strict=false)
+     * @Groups({"read"})
      */
     protected $uuid;
 
@@ -37,7 +36,7 @@ trait EntityIdTrait
         return $this->id;
     }
 
-    public function getUuid(): UuidInterface
+    public function getUuid(): ?UuidInterface
     {
         return $this->uuid;
     }
@@ -45,5 +44,14 @@ trait EntityIdTrait
     public function setUuid(UuidInterface $uuid)
     {
         $this->uuid = $uuid;
+    }
+
+    /**
+     * @ORM\PrePersist()
+     */
+    public function generateUuid() {
+        if ($this->getUuid() === null) {
+            $this->setUuid(Uuid::uuid4());
+        }
     }
 }

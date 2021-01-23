@@ -3,9 +3,14 @@
 namespace App\Repository;
 
 use App\Entity\User;
+use App\Helper\QueryHelper;
 use App\Transfer\Search;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\ORM\NonUniqueResultException;
+use Doctrine\ORM\NoResultException;
+use Doctrine\ORM\QueryBuilder;
+use ReflectionClass;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -18,6 +23,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
  */
 class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
 {
+    use QueryHelper;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
@@ -38,23 +45,49 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Returns one User.
+     * Returns one User. Search case insensitive.
      *
      * @param array
      *
-     * @return User|null Returns an User object or null if none could be found
+     * @return User|null Returns a User object or null if none could be found
      */
-    public function findOneCaseInsensitive(array $criteria): ?User
+    public function findOneByCi(array $criteria): ?User
     {
+        $fields = $this->getEntityManager()->getClassMetadata(User::class)->getFieldNames();
+        $criteria = $this->filterArray($criteria, $fields);
+
         $qb = $this->createQueryBuilder('u');
 
         foreach ($criteria as $k => $v) {
-            $v = strtolower($v);
-            $qb->andWhere($qb->expr()->like("LOWER(u.{$k})", ":{$k}"))->setParameter($k, $v);
+            $qb->andWhere($qb->expr()->eq("LOWER(u.{$k})", "LOWER(:{$k})"));
         }
+        $qb
+            ->setParameters($criteria)
+            ->setMaxResults(1);
 
-        $query = $qb->getQuery();
-        return $query->getOneOrNullResult();
+        return $qb->getQuery()->getOneOrNullResult();
+    }
+
+    /**
+     * Returns User objects. Search case insensitive.
+     *
+     * @param array
+     *
+     * @return mixed Returns the list of found User objects.
+     */
+    public function findByCi(array $criteria)
+    {
+        $fields = $this->getEntityManager()->getClassMetadata(User::class)->getFieldNames();
+        $criteria = $this->filterArray($criteria, $fields);
+
+        $qb = $this->createQueryBuilder('u');
+
+        foreach ($criteria as $k => $v) {
+            $qb->andWhere($qb->expr()->eq("LOWER(u.{$k})", "LOWER(:{$k})"));
+        }
+        $qb->setParameters($criteria);
+
+        return $qb->getQuery()->getResult();
     }
 
     public function findBySearch(Search $search)
@@ -72,26 +105,73 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         if (!is_null($search->newsletter)) {
             $qb->andWhere('u.infoMails = :mail')->setParameter('mail', $search->newsletter);
         }
-        // TODO add sort and paging
         $query = $qb->getQuery();
         return $query->getResult();
     }
 
-    public function findAllActiveQueryBuilder(string $filter = null)
+    public function findAllSimpleQueryBuilder(?string $filter = null, array $sort = [], bool $exact = false): QueryBuilder
     {
-        $qb = $this->createQueryBuilder('u')
-            ->orderBy('u.nickname')
-            ->where('u.status > 0');
+        $qb = $this->createQueryBuilder('u');
+
+        $fields = $this->getEntityManager()->getClassMetadata(User::class)->getFieldNames();
+        $sort = $this->filterArray($sort, $fields, ['asc', 'desc']);
+
+        $parameter = $exact ?
+            $this->makeLikeParam($filter, "%s") :
+            $this->makeLikeParam($filter, "%%%s%%");
 
         if (!empty($filter)) {
             $qb->andWhere(
                 $qb->expr()->orX(
-                    $qb->expr()->like('LOWER(u.nickname)', 'LOWER(:q)'),
-                    $qb->expr()->like('LOWER(u.email)', 'LOWER(:q)'),
-                    $qb->expr()->like('LOWER(u.surname)', 'LOWER(:q)'),
-                    $qb->expr()->like('LOWER(u.firstname)', 'LOWER(:q)'),
+                    "LOWER(u.nickname) LIKE LOWER(:q) ESCAPE '!'",
+                    "LOWER(u.email) LIKE LOWER(:q) ESCAPE '!'",
+                    "LOWER(u.surname) LIKE LOWER(:q) ESCAPE '!'",
+                    "LOWER(u.firstname) LIKE LOWER(:q) ESCAPE '!'",
                 )
-            )->setParameter('q', "%".$filter."%");
+            )->setParameter('q', $parameter);
+        }
+
+        if (empty($sort)) {
+            $qb->orderBy('u.nickname');
+        } else {
+            foreach ($sort as $s => $d) {
+                $qb->addOrderBy('u.'.$s, $d);
+            }
+        }
+
+        return $qb;
+    }
+
+    public function findAllQueryBuilder(array $filter, array $sort = [], bool $exact = false): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('u');
+
+        $parameter = [];
+        $criteria = [];
+        $fields = $this->getEntityManager()->getClassMetadata(User::class)->getFieldNames();
+
+        $filter = $this->filterArray($filter, $fields);
+        $sort = $this->filterArray($sort, $fields, ['asc', 'desc']);
+
+        foreach ($filter as $field => $value) {
+            $parameter[$field] = $exact ?
+                $this->makeLikeParam($value, "%s") :
+                $this->makeLikeParam($value, "%%%s%%");
+            $criteria[] = $exact ?
+                "u.{$field} LIKE :{$field} ESCAPE '!'" :
+                "LOWER(u.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+        }
+
+        $qb
+            ->andWhere($qb->expr()->andX(...$criteria))
+            ->setParameters($parameter);
+
+        if (empty($sort)) {
+            $qb->orderBy('u.nickname');
+        } else {
+            foreach ($sort as $field => $dir) {
+                $qb->addOrderBy('u.'.$field, $dir);
+            }
         }
 
         return $qb;
