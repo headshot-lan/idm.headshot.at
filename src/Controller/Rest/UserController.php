@@ -24,7 +24,7 @@ use Swagger\Annotations as SWG;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
+use Symfony\Component\Security\Core\Encoder\EncoderFactoryInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
@@ -37,14 +37,14 @@ class UserController extends AbstractFOSRestController
     private EntityManagerInterface $em;
     private UserRepository $userRepository;
     private UserService $userService;
-    private PasswordEncoderInterface $passwordEncoder;
+    private EncoderFactoryInterface $encoderFactory;
 
-    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, UserService $userService, PasswordEncoderInterface $passwordEncoder)
+    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, UserService $userService, EncoderFactoryInterface $encoderFactory)
     {
         $this->em = $entityManager;
         $this->userRepository = $userRepository;
         $this->userService = $userService;
-        $this->passwordEncoder = $passwordEncoder;
+        $this->encoderFactory = $encoderFactory;
     }
 
     private function handleValidiationErrors(ConstraintViolationListInterface $errors)
@@ -144,8 +144,10 @@ class UserController extends AbstractFOSRestController
             return $this->handleView($view);
         }
 
-        if ($this->passwordEncoder->needsRehash($update->getPassword())) {
-            $update->setPassword($this->passwordEncoder->encodePassword($update->getPassword(), null));
+        $encoder = $this->encoderFactory->getEncoder(User::class);
+
+        if ($encoder->needsRehash($update->getPassword())) {
+            $update->setPassword($encoder->encodePassword($update->getPassword(), null));
         }
 
         $this->em->persist($update);
@@ -189,11 +191,13 @@ class UserController extends AbstractFOSRestController
             return $this->handleView($view);
         }
 
+        $encoder = $this->encoderFactory->getEncoder(User::class);
+
         // TODO move this to UserService
         $new->setStatus(1);
         $new->setEmailConfirmed(false);
         $new->setInfoMails($new->getInfoMails() ?? false);
-        $new->setPassword($this->passwordEncoder->encodePassword($new->getPassword(), null));
+        $new->setPassword($encoder->encodePassword($new->getPassword(), null));
 
         $this->em->persist($new);
         $this->em->flush();

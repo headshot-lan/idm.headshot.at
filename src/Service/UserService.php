@@ -5,19 +5,19 @@ namespace App\Service;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
+use Symfony\Component\Security\Core\Encoder\EncoderFactoryInterface;
 
 class UserService
 {
     private EntityManagerInterface $em;
     private UserRepository $userRepository;
-    private PasswordEncoderInterface $passwordEncoder;
+    private EncoderFactoryInterface $encoderFactory;
 
-    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, PasswordEncoderInterface $passwordEncoder)
+    public function __construct(EntityManagerInterface $entityManager, EncoderFactoryInterface $upe, UserRepository $userRepository)
     {
         $this->em = $entityManager;
         $this->userRepository = $userRepository;
-        $this->passwordEncoder = $passwordEncoder;
+        $this->encoderFactory = $upe;
     }
 
     public function listUser($searchParameter = null, $searchValue = null, $disabled = false)
@@ -177,7 +177,8 @@ class UserService
         $user->setNickname($nickname);
         $user->setStatus(1);
         $user->setEmailConfirmed($confirmed);
-        $user->setPassword($this->passwordEncoder->encodePassword($password, null));
+        $encoder = $this->encoderFactory->getEncoder(User::class);
+        $user->setPassword($encoder->encodePassword($password, null));
 
         if ($infoMails) {
             if ('true' === $infoMails || true === $infoMails) {
@@ -232,10 +233,12 @@ class UserService
             return false;
         }
 
-        $valid = $this->passwordEncoder->isPasswordValid($user->getPassword(), $password, null);
-        if ($this->passwordEncoder->needsRehash($user->getPassword())) {
+        $encoder = $this->encoderFactory->getEncoder($user);
+
+        $valid = $encoder->isPasswordValid($user->getPassword(), $password, null);
+        if ($valid && $encoder->needsRehash($user->getPassword())) {
             //Rehash legacy Password if needed
-            $user->setPassword($this->passwordEncoder->encodePassword($password, null));
+            $user->setPassword($encoder->encodePassword($password, null));
             $this->em->flush();
         }
 

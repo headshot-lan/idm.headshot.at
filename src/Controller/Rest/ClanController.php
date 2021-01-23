@@ -26,7 +26,7 @@ use Swagger\Annotations as SWG;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
+use Symfony\Component\Security\Core\Encoder\EncoderFactoryInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
@@ -41,7 +41,7 @@ class ClanController extends AbstractFOSRestController
     private ClanRepository $clanRepository;
     private UserRepository $userRepository;
     private UserClanRepository $userClanRepository;
-    private PasswordEncoderInterface $passwordEncoder;
+    private EncoderFactoryInterface $encoderFactory;
 
     public function __construct(
         EntityManagerInterface $entityManager,
@@ -49,14 +49,14 @@ class ClanController extends AbstractFOSRestController
         ClanRepository $clanRepository,
         UserRepository $userRepository,
         UserClanRepository $userClanRepository,
-        PasswordEncoderInterface $passwordEncoder
+        EncoderFactoryInterface $encoderFactory
     ){
         $this->em = $entityManager;
         $this->clanService = $clanService;
         $this->clanRepository = $clanRepository;
         $this->userRepository = $userRepository;
         $this->userClanRepository = $userClanRepository;
-        $this->passwordEncoder = $passwordEncoder;
+        $this->encoderFactory = $encoderFactory;
     }
 
     private function handleValidiationErrors(ConstraintViolationListInterface $errors)
@@ -152,7 +152,7 @@ class ClanController extends AbstractFOSRestController
             return $this->handleView($view);
         }
 
-        $new->setJoinPassword($this->passwordEncoder->encodePassword($new->getJoinPassword(), null));
+        $new->setJoinPassword($this->encoderFactory->encodePassword($new->getJoinPassword(), null));
 
         $this->em->persist($new);
         $this->em->flush();
@@ -210,8 +210,10 @@ class ClanController extends AbstractFOSRestController
             return $this->handleView($view);
         }
 
-        if ($this->passwordEncoder->needsRehash($update->getJoinPassword())) {
-            $update->setJoinPassword($this->passwordEncoder->encodePassword($update->getJoinPassword(), null));
+        $encoder = $this->encoderFactory->getEncoder(Clan::class);
+
+        if ($encoder->needsRehash($update->getJoinPassword())) {
+            $update->setJoinPassword($encoder->encodePassword($update->getJoinPassword(), null));
         }
 
         $this->em->persist($update);

@@ -3,20 +3,21 @@
 
 namespace App\Service;
 
+use App\Entity\Clan;
 use App\Repository\ClanRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
+use Symfony\Component\Security\Core\Encoder\EncoderFactoryInterface;
 
 class ClanService
 {
     private EntityManagerInterface $em;
     private ClanRepository $clanRepository;
-    private PasswordEncoderInterface $passwordEncoder;
+    private EncoderFactoryInterface $encoderFactory;
 
-    public function __construct(EntityManagerInterface $entityManager, ClanRepository $clanRepository, PasswordEncoderInterface $passwordEncoder)
+    public function __construct(EntityManagerInterface $entityManager, ClanRepository $clanRepository, EncoderFactoryInterface $encoderFactory)
     {
         $this->clanRepository = $clanRepository;
-        $this->passwordEncoder = $passwordEncoder;
+        $this->encoderFactory = $encoderFactory;
         $this->em = $entityManager;
     }
 
@@ -32,10 +33,12 @@ class ClanService
             return false;
         }
 
-        $valid = $this->passwordEncoder->isPasswordValid($clan->getJoinPassword(), $password, null);
-        if ($this->passwordEncoder->needsRehash($clan->getJoinPassword())) {
+        $encoder = $this->encoderFactory->getEncoder(Clan::class);
+
+        $valid = $encoder->isPasswordValid($clan->getJoinPassword(), $password, null);
+        if ($encoder->needsRehash($clan->getJoinPassword())) {
             //Rehash legacy Password if needed
-            $clan->setJoinPassword($this->passwordEncoder->encodePassword($password, null));
+            $clan->setJoinPassword($encoder->encodePassword($password, null));
             $this->em->flush();
         }
 

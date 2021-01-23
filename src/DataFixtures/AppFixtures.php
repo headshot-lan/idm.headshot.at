@@ -6,31 +6,25 @@ use App\Entity\Clan;
 use App\Entity\User;
 use App\Entity\ApiUser;
 use App\Entity\UserClan;
-use App\Repository\UserRepository;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Ramsey\Uuid\Uuid;
-use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
 use NumberToWords\NumberToWords;
+use Symfony\Component\Security\Core\Encoder\EncoderFactoryInterface;
 
 class AppFixtures extends Fixture
 {
-    /**
-     * @var PasswordEncoderInterface
-     */
-    private PasswordEncoderInterface $encoder;
-    /**
-     * @var UserRepository
-     */
-    private UserRepository $userRepository;
+    private EncoderFactoryInterface $encoderFactory;
 
-    public function __construct(PasswordEncoderInterface $encoder)
+    public function __construct(EncoderFactoryInterface $encoder)
     {
-        $this->encoder = $encoder;
+        $this->encoderFactory = $encoder;
     }
 
     public function load(ObjectManager $manager)
     {
+        $encoder = $this->encoderFactory->getEncoder(User::class);
+
         $numberToWords = new NumberToWords();
         $numberTransformer = $numberToWords->getNumberTransformer('de');
 
@@ -43,7 +37,7 @@ class AppFixtures extends Fixture
             $user->setSurname(ucfirst($numberTransformer->toWords($i)));
             $user->setUuid(Uuid::fromInteger(strval($i)));
             $user->setStatus(1);
-            $user->setPassword($this->encoder->encodePassword('user'.$i, null));
+            $user->setPassword($encoder->encodePassword('user'.$i, null));
             $user->setEmailConfirmed(1 != $i % 5);
             $user->setInfoMails(1 == ($i + 1) % 5);
             $user->setPersonalDataLocked(1 == ($i + 1) % 7);
@@ -63,7 +57,7 @@ class AppFixtures extends Fixture
         $ghost->setSurname("User");
         $ghost->setStatus(-1);
         $ghost->setEmail('ghost@localhost.local');
-        $ghost->setPassword($this->encoder->encodePassword('ghost', null));
+        $ghost->setPassword($encoder->encodePassword('ghost', null));
         $ghost->setEmailConfirmed(1);
         $ghost->setInfoMails(true);
         $ghost->setPersonalDataLocked(false);
@@ -152,11 +146,11 @@ class AppFixtures extends Fixture
         $admin->setSurname('Admin');
         $admin->setEmail('admin@localhost.local');
         $admin->setStatus(1);
-        $admin->setPassword($this->encoder->encodePassword('admin', null));
-        $user->setEmailConfirmed(true);
-        $user->setInfoMails(false);
-        $user->setPersonalDataLocked(false);
-        $user->setPersonalDataConfirmed(false);
+        $admin->setPassword($encoder->encodePassword('admin', null));
+        $admin->setEmailConfirmed(true);
+        $admin->setInfoMails(false);
+        $admin->setPersonalDataLocked(false);
+        $admin->setPersonalDataConfirmed(false);
         $admin->setIsSuperadmin(true);
 
         $manager->persist($admin);
