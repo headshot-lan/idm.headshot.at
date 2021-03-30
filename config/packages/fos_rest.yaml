@@ -4,7 +4,7 @@ fos_rest:
   param_fetcher_listener:  true
   allowed_methods_listener:  true
   view:
-    view_response_listener:  true
+    view_response_listener:  false
     jsonp_handler: ~
   #    exception:
   #        codes:
