@@ -7,7 +7,12 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="gamer_clan")
+ * @ORM\Table(
+ *     name="gamer_clan",
+ *     uniqueConstraints={
+ *          @ORM\UniqueConstraint(name="user_clan_unique", columns={"user_id", "clan_id"})
+ *     }
+ * )
  */
 class UserClan
 {
@@ -20,20 +25,15 @@ class UserClan
 
     /**
      * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     * @ORM\Column(type="integer")
-     */
-    private $id;
-
-    /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User", inversedBy="clans")
-     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE")
+     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE", name="user_id")
      */
     private $user;
 
     /**
+     * @ORM\Id
      * @ORM\ManyToOne(targetEntity="App\Entity\Clan", inversedBy="users")
-     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE")
+     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE", name="clan_id")
      */
     private $clan;
 
