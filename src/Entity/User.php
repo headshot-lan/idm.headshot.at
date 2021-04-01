@@ -45,7 +45,7 @@ class User
     private $emailConfirmed = false;
 
     /**
-     * @ORM\Column(type="boolean")
+     * @ORM\Column(type="boolean", nullable=true)
      * @Groups({"read", "write"})
      */
     private $infoMails = false;
@@ -449,7 +449,7 @@ class User
         return $this->infoMails;
     }
 
-    public function setInfoMails(bool $infoMails): self
+    public function setInfoMails(?bool $infoMails): self
     {
         $this->infoMails = $infoMails;
 
