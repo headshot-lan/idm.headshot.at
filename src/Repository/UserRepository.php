@@ -148,18 +148,28 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         $parameter = [];
         $criteria = [];
-        $fields = $this->getEntityManager()->getClassMetadata(User::class)->getFieldNames();
+        $metadata = $this->getEntityManager()->getClassMetadata(User::class);
+        $fields = $metadata->getFieldNames();
 
         $filter = $this->filterArray($filter, $fields);
         $sort = $this->filterArray($sort, $fields, ['asc', 'desc']);
 
         foreach ($filter as $field => $value) {
-            $parameter[$field] = $exact ?
-                $this->makeLikeParam($value, "%s") :
-                $this->makeLikeParam($value, "%%%s%%");
-            $criteria[] = $exact ?
-                "u.{$field} LIKE :{$field} ESCAPE '!'" :
-                "LOWER(u.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+            switch ($metadata->getTypeOfField($field)) {
+                case 'boolean':
+                    $value = strtolower($value);
+                    if ($value == 'false' || $value == 'true') {
+                        $criteria[] = "u.{$field} = :{$field}";
+                        $parameter[$field] = $value;
+                    } else {
+                        $criteria[] = "0=1";
+                    }
+                    break;
+                default:
+                    $parameter[$field] = $exact ? $value : $this->makeLikeParam($value, "%%%s%%");
+                    $criteria[] = $exact ? "u.{$field} = :{$field}" : "LOWER(u.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+                    break;
+            }
         }
 
         $qb
