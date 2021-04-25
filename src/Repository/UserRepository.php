@@ -158,9 +158,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             switch ($metadata->getTypeOfField($field)) {
                 case 'boolean':
                     $value = strtolower($value);
-                    if ($value == 'false' || $value == 'true') {
+                    if (in_array($value, ['true', 'false', '1', '0'], true)) {
                         $criteria[] = "u.{$field} = :{$field}";
-                        $parameter[$field] = $value;
+                        $parameter[$field] = $value == 'true' || $value == '1';
                     } else {
                         $criteria[] = "0=1";
                     }
