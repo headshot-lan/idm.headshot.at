@@ -6,7 +6,6 @@ use App\Entity\Clan;
 use App\Entity\User;
 use App\Entity\UserClan;
 use App\Repository\ClanRepository;
-use App\Repository\UserClanRepository;
 use App\Repository\UserRepository;
 use App\Serializer\UserClanNormalizer;
 use App\Service\ClanService;
@@ -41,7 +40,6 @@ class ClanController extends AbstractFOSRestController
     private ClanService $clanService;
     private ClanRepository $clanRepository;
     private UserRepository $userRepository;
-    private UserClanRepository $userClanRepository;
     private EncoderFactoryInterface $encoderFactory;
 
     public function __construct(
@@ -49,14 +47,12 @@ class ClanController extends AbstractFOSRestController
         ClanService $clanService,
         ClanRepository $clanRepository,
         UserRepository $userRepository,
-        UserClanRepository $userClanRepository,
         EncoderFactoryInterface $encoderFactory
     ){
         $this->em = $entityManager;
         $this->clanService = $clanService;
         $this->clanRepository = $clanRepository;
         $this->userRepository = $userRepository;
-        $this->userClanRepository = $userClanRepository;
         $this->encoderFactory = $encoderFactory;
     }
 
@@ -248,6 +244,7 @@ class ClanController extends AbstractFOSRestController
      * @Rest\QueryParam(name="filter")
      * @Rest\QueryParam(name="sort", requirements="(asc|desc)", map=true)
      * @Rest\QueryParam(name="exact", requirements="(true|false)", allowBlank=false, default="false")
+     * @Rest\QueryParam(name="case", requirements="(true|false)", allowBlank=false, default="false")
      * @Rest\QueryParam(name="depth", requirements="\d+", allowBlank=false, default="2")
      */
     public function getClansAction(ParamFetcher $fetcher)
@@ -257,15 +254,17 @@ class ClanController extends AbstractFOSRestController
         $filter = $fetcher->get('filter');
         $sort = $fetcher->get('sort');
         $exact = $fetcher->get('exact');
+        $case = $fetcher->get('case');
         $depth = intval($fetcher->get('depth'));
 
         $sort = is_array($sort) ? $sort : (empty($sort) ? [] : [$sort => 'asc']);
+        $case = $case === 'true';
         $exact = $exact === 'true';
 
         if (is_array($filter)) {
-            $qb = $this->clanRepository->findAllQueryBuilder($filter, $sort, $exact);
+            $qb = $this->clanRepository->findAllQueryBuilder($filter, $sort, $case, $exact);
         } else {
-            $qb = $this->clanRepository->findAllSimpleQueryBuilder($filter, $sort, $exact);
+            $qb = $this->clanRepository->findAllSimpleQueryBuilder($filter, $sort, $case, $exact);
         }
 
         //set useOutputWalker to false otherwise we cannot Paginate Entities with INNER/LEFT Joins

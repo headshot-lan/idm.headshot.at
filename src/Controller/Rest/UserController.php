@@ -298,6 +298,7 @@ class UserController extends AbstractFOSRestController
      * @Rest\QueryParam(name="filter")
      * @Rest\QueryParam(name="sort", requirements="(asc|desc)", map=true)
      * @Rest\QueryParam(name="exact", requirements="(true|false)", allowBlank=false, default="false")
+     * @Rest\QueryParam(name="case", requirements="(true|false)", allowBlank=false, default="false")
      * @Rest\QueryParam(name="depth", requirements="\d+", allowBlank=false, default="2")
      */
     public function getUsersAction(ParamFetcher $fetcher)
@@ -307,15 +308,17 @@ class UserController extends AbstractFOSRestController
         $filter = $fetcher->get('filter');
         $sort = $fetcher->get('sort');
         $exact = $fetcher->get('exact');
+        $case = $fetcher->get('case');
         $depth = intval($fetcher->get('depth'));
 
         $sort = is_array($sort) ? $sort : (empty($sort) ? [] : [$sort => 'asc']);
+        $case = $case === 'true';
         $exact = $exact === 'true';
 
         if (is_array($filter)) {
-            $qb = $this->userRepository->findAllQueryBuilder($filter, $sort, $exact);
+            $qb = $this->userRepository->findAllQueryBuilder($filter, $sort, $case, $exact);
         } else {
-            $qb = $this->userRepository->findAllSimpleQueryBuilder($filter, $sort, $exact);
+            $qb = $this->userRepository->findAllSimpleQueryBuilder($filter, $sort, $case, $exact);
         }
 
         // Select all Users where the Status is greater then 0 (e.g. not disabled/locked/deactivated)

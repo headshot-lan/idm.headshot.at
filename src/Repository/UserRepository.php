@@ -118,7 +118,10 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $query->getResult();
     }
 
-    public function findAllSimpleQueryBuilder(?string $filter = null, array $sort = [], bool $exact = false): QueryBuilder
+    public function findAllSimpleQueryBuilder(?string $filter = null,
+                                              array $sort = [],
+                                              bool $case = false,
+                                              bool $exact = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('u');
 
@@ -130,12 +133,13 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             $this->makeLikeParam($filter, "%%%s%%");
 
         if (!empty($filter)) {
+            $op = $case ? "" : "LOWER";
             $qb->andWhere(
                 $qb->expr()->orX(
-                    "LOWER(u.nickname) LIKE LOWER(:q) ESCAPE '!'",
-                    "LOWER(u.email) LIKE LOWER(:q) ESCAPE '!'",
-                    "LOWER(u.surname) LIKE LOWER(:q) ESCAPE '!'",
-                    "LOWER(u.firstname) LIKE LOWER(:q) ESCAPE '!'",
+                    "{$op}(u.nickname) LIKE {$op}(:q) ESCAPE '!'",
+                    "{$op}(u.email) LIKE {$op}(:q) ESCAPE '!'",
+                    "{$op}(u.surname) LIKE {$op}(:q) ESCAPE '!'",
+                    "{$op}(u.firstname) LIKE {$op}(:q) ESCAPE '!'",
                 )
             )->setParameter('q', $parameter);
         }
@@ -151,7 +155,10 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $qb;
     }
 
-    public function findAllQueryBuilder(array $filter, array $sort = [], bool $exact = false): QueryBuilder
+    public function findAllQueryBuilder(array $filter,
+                                        array $sort = [],
+                                        bool $case = false,
+                                        bool $exact = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('u');
 
@@ -175,8 +182,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                     }
                     break;
                 default:
-                    $parameter[$field] = $exact ? $value : $this->makeLikeParam($value, "%%%s%%");
-                    $criteria[] = $exact ? "u.{$field} = :{$field}" : "LOWER(u.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+                    $parameter[$field] = $exact ?
+                        $this->makeLikeParam($value, "%s") :
+                        $this->makeLikeParam($value, "%%%s%%");
+                    $op = $case ? "" : "LOWER";
+                    $criteria[] = "{$op}(u.{$field}) LIKE {$op}(:{$field}) ESCAPE '!'";
                     break;
             }
         }

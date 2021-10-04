@@ -19,6 +19,19 @@ JSON;
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
     }
 
+    public function testAuthorizeSuccessfulCaseInsensitive()
+    {
+        $data = <<<JSON
+{
+    "name": "uSeR1@localhost.local",
+    "secret": "user1"
+}
+JSON;
+        $this->client->request('POST', '/api/users/authorize', [], [], ['CONTENT_TYPE' => 'application/json'], $data);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+    }
+
     public function testAuthorizeFailPasswordIncorrect()
     {
         $data = <<<JSON

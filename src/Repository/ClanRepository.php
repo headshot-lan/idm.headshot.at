@@ -78,7 +78,7 @@ class ClanRepository extends ServiceEntityRepository
         return $query->getResult();
     }
 
-    public function findAllSimpleQueryBuilder(?string $filter = null, array $sort = [], bool $exact = false): QueryBuilder
+    public function findAllSimpleQueryBuilder(?string $filter = null, array $sort = [], bool $case = false, bool $exact = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('c');
 
@@ -90,10 +90,11 @@ class ClanRepository extends ServiceEntityRepository
             $this->makeLikeParam($filter, "%%%s%%");
 
         if (!empty($filter)) {
+            $op = $case ? "" : "LOWER";
             $qb->andWhere(
                 $qb->expr()->orX(
-                    "LOWER(c.name) LIKE LOWER(:q) ESCAPE '!'",
-                    "LOWER(c.clantag) LIKE LOWER(:q) ESCAPE '!'",
+                    "{$op}(c.name) LIKE {$op}(:q) ESCAPE '!'",
+                    "{$op}(c.clantag) LIKE {$op}(:q) ESCAPE '!'",
                 )
             )->setParameter('q', $parameter);
         }
@@ -109,7 +110,7 @@ class ClanRepository extends ServiceEntityRepository
         return $qb;
     }
 
-    public function findAllQueryBuilder(array $filter, array $sort = [], bool $exact = false): QueryBuilder
+    public function findAllQueryBuilder(array $filter, array $sort = [], bool $case = false, bool $exact = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('c');
 
@@ -124,9 +125,8 @@ class ClanRepository extends ServiceEntityRepository
             $parameter[$field] = $exact ?
                 $this->makeLikeParam($value, "%s") :
                 $this->makeLikeParam($value, "%%%s%%");
-            $criteria[] = $exact ?
-                "c.{$field} LIKE :{$field} ESCAPE '!'" :
-                "LOWER(c.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+            $op = $case ? "" : "LOWER";
+            $criteria[] = "{$op}(c.{$field}) LIKE {$op}(:{$field}) ESCAPE '!'";
         }
 
         $qb

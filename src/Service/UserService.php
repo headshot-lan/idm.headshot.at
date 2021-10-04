@@ -227,7 +227,7 @@ class UserService
             return false;
         }
 
-        $user = $this->userRepository->findOneBy(['email' => $email]);
+        $user = $this->userRepository->findOneByCi(['email' => $email]);
 
         if (empty($user)) {
             return false;
