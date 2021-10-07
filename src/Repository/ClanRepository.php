@@ -8,6 +8,7 @@ use App\Transfer\Bulk;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\ORM\QueryBuilder;
+use Ramsey\Uuid\Uuid;
 
 /**
  * @method Clan|null find($id, $lockMode = null, $lockVersion = null)
@@ -116,17 +117,45 @@ class ClanRepository extends ServiceEntityRepository
 
         $parameter = [];
         $criteria = [];
-        $fields = $this->getEntityManager()->getClassMetadata(Clan::class)->getFieldNames();
+        $metadata = $this->getEntityManager()->getClassMetadata(Clan::class);
+        $fields = $metadata->getFieldNames();
+
 
         $filter = $this->filterArray($filter, $fields);
         $sort = $this->filterArray($sort, $fields, ['asc', 'desc']);
 
         foreach ($filter as $field => $value) {
-            $parameter[$field] = $exact ?
-                $this->makeLikeParam($value, "%s") :
-                $this->makeLikeParam($value, "%%%s%%");
-            $op = $case ? "" : "LOWER";
-            $criteria[] = "{$op}(c.{$field}) LIKE {$op}(:{$field}) ESCAPE '!'";
+            switch ($metadata->getTypeOfField($field)) {
+                case 'boolean':
+                    $value = strtolower($value);
+                    if (in_array($value, ['true', 'false', '1', '0'], true)) {
+                        $criteria[] = "u.{$field} = :{$field}";
+                        $parameter[$field] = $value == 'true' || $value == '1';
+                    } else {
+                        $criteria[] = "0=1";
+                    }
+                    break;
+                case 'uuid':
+                    if (Uuid::isValid($value)) {
+                        $parameter[$field] = $value;
+                        $criteria[] = "u.{$field} = :{$field}";
+                    } else {
+                        $criteria[] = "0=1";
+                    }
+                    break;
+                case 'string':
+                    $parameter[$field] = $exact ?
+                        $this->makeLikeParam($value, "%s") :
+                        $this->makeLikeParam($value, "%%%s%%");
+                    $criteria[] = $case ?
+                        "u.{$field} LIKE :{$field} ESCAPE '!'" :
+                        "LOWER(u.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+                    break;
+                default:
+                    $parameter[$field] = $value;
+                    $criteria[] = "u.{$field} = :{$field}";
+                    break;
+            }
         }
 
         $qb

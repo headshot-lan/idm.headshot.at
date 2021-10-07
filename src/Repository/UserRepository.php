@@ -11,6 +11,7 @@ use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\ORM\NoResultException;
 use Doctrine\ORM\QueryBuilder;
+use Ramsey\Uuid\Uuid;
 use ReflectionClass;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
@@ -181,12 +182,25 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                         $criteria[] = "0=1";
                     }
                     break;
-                default:
+                case 'uuid':
+                    if (Uuid::isValid($value)) {
+                        $parameter[$field] = $value;
+                        $criteria[] = "u.{$field} = :{$field}";
+                    } else {
+                        $criteria[] = "0=1";
+                    }
+                    break;
+                case 'string':
                     $parameter[$field] = $exact ?
                         $this->makeLikeParam($value, "%s") :
                         $this->makeLikeParam($value, "%%%s%%");
-                    $op = $case ? "" : "LOWER";
-                    $criteria[] = "{$op}(u.{$field}) LIKE {$op}(:{$field}) ESCAPE '!'";
+                    $criteria[] = $case ?
+                        "u.{$field} LIKE :{$field} ESCAPE '!'" :
+                        "LOWER(u.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+                    break;
+                default:
+                    $parameter[$field] = $value;
+                    $criteria[] = "u.{$field} = :{$field}";
                     break;
             }
         }
