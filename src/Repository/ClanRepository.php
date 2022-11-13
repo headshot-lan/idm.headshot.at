@@ -129,7 +129,7 @@ class ClanRepository extends ServiceEntityRepository
                 case 'boolean':
                     $value = strtolower($value);
                     if (in_array($value, ['true', 'false', '1', '0'], true)) {
-                        $criteria[] = "u.{$field} = :{$field}";
+                        $criteria[] = "c.{$field} = :{$field}";
                         $parameter[$field] = $value == 'true' || $value == '1';
                     } else {
                         $criteria[] = "0=1";
@@ -138,7 +138,7 @@ class ClanRepository extends ServiceEntityRepository
                 case 'uuid':
                     if (Uuid::isValid($value)) {
                         $parameter[$field] = $value;
-                        $criteria[] = "u.{$field} = :{$field}";
+                        $criteria[] = "c.{$field} = :{$field}";
                     } else {
                         $criteria[] = "0=1";
                     }
@@ -148,12 +148,12 @@ class ClanRepository extends ServiceEntityRepository
                         $this->makeLikeParam($value, "%s") :
                         $this->makeLikeParam($value, "%%%s%%");
                     $criteria[] = $case ?
-                        "u.{$field} LIKE :{$field} ESCAPE '!'" :
-                        "LOWER(u.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
+                        "c.{$field} LIKE :{$field} ESCAPE '!'" :
+                        "LOWER(c.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";
                     break;
                 default:
                     $parameter[$field] = $value;
-                    $criteria[] = "u.{$field} = :{$field}";
+                    $criteria[] = "c.{$field} = :{$field}";
                     break;
             }
         }
