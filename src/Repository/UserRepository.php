@@ -7,12 +7,9 @@ use App\Helper\QueryHelper;
 use App\Transfer\Bulk;
 use App\Transfer\Search;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Common\Persistence\ManagerRegistry;
-use Doctrine\ORM\NonUniqueResultException;
-use Doctrine\ORM\NoResultException;
 use Doctrine\ORM\QueryBuilder;
+use Doctrine\Persistence\ManagerRegistry;
 use Ramsey\Uuid\Uuid;
-use ReflectionClass;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -38,7 +35,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     public function upgradePassword(UserInterface $user, string $newEncodedPassword): void
     {
         if (!$user instanceof User) {
-            throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', \get_class($user)));
+            throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', $user::class));
         }
 
         $user->setPassword($newEncodedPassword);
@@ -47,7 +44,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Returns one User. Search case insensitive.
+     * Returns one User. Search case-insensitive.
      *
      * @param array
      *
@@ -71,11 +68,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Returns User objects. Search case insensitive.
+     * Returns User objects. Search case-insensitive.
      *
      * @param array
      *
-     * @return mixed Returns the list of found User objects.
+     * @return mixed returns the list of found User objects
      */
     public function findByCi(array $criteria)
     {
@@ -97,6 +94,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $qb = $this->createQueryBuilder('u');
         $qb->andWhere('u.uuid in (:uuids)')->setParameter('uuids', $bulk->uuid);
         $query = $qb->getQuery();
+
         return $query->getResult();
     }
 
@@ -116,6 +114,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             $qb->andWhere('u.infoMails = :mail')->setParameter('mail', $search->newsletter);
         }
         $query = $qb->getQuery();
+
         return $query->getResult();
     }
 
@@ -130,11 +129,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $sort = $this->filterArray($sort, $fields, ['asc', 'desc']);
 
         $parameter = $exact ?
-            $this->makeLikeParam($filter, "%s") :
-            $this->makeLikeParam($filter, "%%%s%%");
+            $this->makeLikeParam($filter, '%s') :
+            $this->makeLikeParam($filter, '%%%s%%');
 
         if (!empty($filter)) {
-            $op = $case ? "" : "LOWER";
+            $op = $case ? '' : 'LOWER';
             $qb->andWhere(
                 $qb->expr()->orX(
                     "{$op}(u.nickname) LIKE {$op}(:q) ESCAPE '!'",
@@ -174,12 +173,12 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         foreach ($filter as $field => $value) {
             switch ($metadata->getTypeOfField($field)) {
                 case 'boolean':
-                    $value = strtolower($value);
+                    $value = strtolower((string) $value);
                     if (in_array($value, ['true', 'false', '1', '0'], true)) {
                         $criteria[] = "u.{$field} = :{$field}";
                         $parameter[$field] = $value == 'true' || $value == '1';
                     } else {
-                        $criteria[] = "0=1";
+                        $criteria[] = '0=1';
                     }
                     break;
                 case 'uuid':
@@ -187,13 +186,13 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                         $parameter[$field] = $value;
                         $criteria[] = "u.{$field} = :{$field}";
                     } else {
-                        $criteria[] = "0=1";
+                        $criteria[] = '0=1';
                     }
                     break;
                 case 'string':
                     $parameter[$field] = $exact ?
-                        $this->makeLikeParam($value, "%s") :
-                        $this->makeLikeParam($value, "%%%s%%");
+                        $this->makeLikeParam($value, '%s') :
+                        $this->makeLikeParam($value, '%%%s%%');
                     $criteria[] = $case ?
                         "u.{$field} LIKE :{$field} ESCAPE '!'" :
                         "LOWER(u.{$field}) LIKE LOWER(:{$field}) ESCAPE '!'";

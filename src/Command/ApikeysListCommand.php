@@ -12,23 +12,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class ApikeysListCommand extends Command
 {
     protected static $defaultName = 'app:apikeys:list';
-    /**
-     * @var ApiKeyService
-     */
-    private $apiKeyService;
+    protected static $defaultDescription = 'Lists all API Keys';
 
-    public function __construct(ApiKeyService $apiKeyService)
+    public function __construct(private readonly ApiKeyService $apiKeyService)
     {
-        $this->apiKeyService = $apiKeyService;
-
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this
-            ->setDescription('Lists all API Keys')
-        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -44,6 +36,6 @@ class ApikeysListCommand extends Command
         }
         $table->render();
 
-        return 0;
+        return (int) Command::SUCCESS;
     }
 }

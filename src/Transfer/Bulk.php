@@ -3,6 +3,7 @@
 namespace App\Transfer;
 
 use Symfony\Component\Validator\Constraints as Assert;
+use OpenApi\Annotations as OA;
 
 class Bulk
 {
@@ -11,7 +12,7 @@ class Bulk
      *      @Assert\NotBlank,
      *      @Assert\Uuid(strict=false)
      * })
-     * @var array
+     * @OA\Property(type="array", @OA\Items(type="string"))
      */
     public array $uuid = [];
 }

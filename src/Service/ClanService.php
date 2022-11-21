@@ -1,24 +1,16 @@
 <?php
 
-
 namespace App\Service;
 
 use App\Entity\Clan;
 use App\Repository\ClanRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Encoder\EncoderFactoryInterface;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 
 class ClanService
 {
-    private EntityManagerInterface $em;
-    private ClanRepository $clanRepository;
-    private EncoderFactoryInterface $encoderFactory;
-
-    public function __construct(EntityManagerInterface $entityManager, ClanRepository $clanRepository, EncoderFactoryInterface $encoderFactory)
+    public function __construct(private readonly EntityManagerInterface $em, private readonly ClanRepository $clanRepository, private readonly PasswordHasherFactoryInterface $hasherFactory)
     {
-        $this->clanRepository = $clanRepository;
-        $this->encoderFactory = $encoderFactory;
-        $this->em = $entityManager;
     }
 
     public function checkCredentials(string $name, string $password)
@@ -33,12 +25,12 @@ class ClanService
             return false;
         }
 
-        $encoder = $this->encoderFactory->getEncoder(Clan::class);
+        $hasher = $this->hasherFactory->getPasswordHasher(Clan::class);
 
-        $valid = $encoder->isPasswordValid($clan->getJoinPassword(), $password, null);
-        if ($encoder->needsRehash($clan->getJoinPassword())) {
-            //Rehash legacy Password if needed
-            $clan->setJoinPassword($encoder->encodePassword($password, null));
+        $valid = $hasher->verify($clan->getJoinPassword(), $password);
+        if ($hasher->needsRehash($clan->getJoinPassword())) {
+            // Rehash legacy Password if needed
+            $clan->setJoinPassword($hasher->hash($password));
             $this->em->flush();
         }
 

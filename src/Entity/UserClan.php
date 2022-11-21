@@ -3,17 +3,10 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Serializer\Annotation\Groups;
 
-/**
- * @ORM\Entity
- * @ORM\Table(
- *     name="gamer_clan",
- *     uniqueConstraints={
- *          @ORM\UniqueConstraint(name="user_clan_unique", columns={"user_id", "clan_id"})
- *     }
- * )
- */
+#[ORM\Entity]
+#[ORM\Table(name: 'gamer_clan')]
+#[ORM\UniqueConstraint(name: 'user_clan_unique', columns: ['user_id', 'clan_id'])]
 class UserClan
 {
     public function __construct()
@@ -23,24 +16,18 @@ class UserClan
         }
     }
 
-    /**
-     * @ORM\Id
-     * @ORM\ManyToOne(targetEntity="App\Entity\User", inversedBy="clans")
-     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE", name="user_id")
-     */
-    private $user;
+    #[ORM\Id]
+    #[ORM\ManyToOne(inversedBy: 'clans')]
+    #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
+    private ?User $user = null;
 
-    /**
-     * @ORM\Id
-     * @ORM\ManyToOne(targetEntity="App\Entity\Clan", inversedBy="users")
-     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE", name="clan_id")
-     */
-    private $clan;
+    #[ORM\Id]
+    #[ORM\ManyToOne(inversedBy: 'users')]
+    #[ORM\JoinColumn(name: 'clan_id', nullable: false, onDelete: 'CASCADE')]
+    private ?Clan $clan = null;
 
-    /**
-     * @ORM\Column(type="boolean")
-     */
-    private $admin;
+    #[ORM\Column(type: 'boolean')]
+    private ?bool $admin = false;
 
     /**
      * @return mixed
@@ -58,10 +45,7 @@ class UserClan
         return $this->user;
     }
 
-    /**
-     * @param mixed $user
-     */
-    public function setUser($user): void
+    public function setUser(mixed $user): void
     {
         $this->user = $user;
     }
@@ -74,10 +58,7 @@ class UserClan
         return $this->clan;
     }
 
-    /**
-     * @param mixed $clan
-     */
-    public function setClan($clan): void
+    public function setClan(mixed $clan): void
     {
         $this->clan = $clan;
     }
@@ -90,12 +71,8 @@ class UserClan
         return $this->admin;
     }
 
-    /**
-     * @param mixed $admin
-     */
-    public function setAdmin($admin): void
+    public function setAdmin(mixed $admin): void
     {
         $this->admin = $admin;
     }
-
 }

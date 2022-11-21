@@ -2,21 +2,21 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\ApiUser;
 use App\Entity\Clan;
 use App\Entity\User;
-use App\Entity\ApiUser;
 use App\Entity\UserClan;
 use Doctrine\Bundle\FixturesBundle\Fixture;
-use Doctrine\Common\Persistence\ObjectManager;
-use Ramsey\Uuid\Uuid;
+use Doctrine\Persistence\ObjectManager;
 use NumberToWords\NumberToWords;
-use Symfony\Component\Security\Core\Encoder\SodiumPasswordEncoder;
+use Ramsey\Uuid\Uuid;
+use Symfony\Component\PasswordHasher\Hasher\SodiumPasswordHasher;
 
 class AppFixtures extends Fixture
 {
-    public function load(ObjectManager $manager)
+    public function load(ObjectManager $manager): void
     {
-        $encoder = new SodiumPasswordEncoder();
+        $hasher = new SodiumPasswordHasher();
 
         $numberToWords = new NumberToWords();
         $numberTransformer = $numberToWords->getNumberTransformer('de');
@@ -26,11 +26,11 @@ class AppFixtures extends Fixture
             $user = new User();
             $user->setNickname('User '.$i);
             $user->setEmail('user'.$i.'@localhost.local');
-            $user->setFirstname("User");
+            $user->setFirstname('User');
             $user->setSurname(ucfirst($numberTransformer->toWords($i)));
             $user->setUuid(Uuid::fromInteger(strval($i)));
             $user->setStatus(1);
-            $user->setPassword($encoder->encodePassword('user'.$i, null));
+            $user->setPassword($hasher->hash('user'.$i));
             $user->setEmailConfirmed(1 != $i % 5);
             $user->setInfoMails(1 == ($i + 1) % 5);
             $user->setPersonalDataLocked(1 == ($i + 1) % 7);
@@ -45,12 +45,12 @@ class AppFixtures extends Fixture
 
         $ghost = new User();
         $ghost->setUuid(Uuid::fromInteger(42));
-        $ghost->setNickname("DeletedUser");
-        $ghost->setFirstname("Deleted");
-        $ghost->setSurname("User");
+        $ghost->setNickname('DeletedUser');
+        $ghost->setFirstname('Deleted');
+        $ghost->setSurname('User');
         $ghost->setStatus(-1);
         $ghost->setEmail('ghost@localhost.local');
-        $ghost->setPassword($encoder->encodePassword('ghost', null));
+        $ghost->setPassword($hasher->hash('ghost'));
         $ghost->setEmailConfirmed(1);
         $ghost->setInfoMails(true);
         $ghost->setPersonalDataLocked(false);
@@ -68,7 +68,7 @@ class AppFixtures extends Fixture
         $clan->setWebsite('http://localhost');
         $clan->setJoinPassword(password_hash('clan1', PASSWORD_ARGON2ID));
 
-        $clanuser1 = $manager->getRepository('App:User')->findOneBy(['uuid' => '00000000-0000-0000-0000-000000000001']);
+        $clanuser1 = $manager->getRepository(User::class)->findOneBy(['uuid' => '00000000-0000-0000-0000-000000000001']);
 
         $userclan = new UserClan();
         $userclan->setAdmin(true);
@@ -77,7 +77,7 @@ class AppFixtures extends Fixture
 
         $manager->persist($userclan);
 
-        $clanuser2 = $manager->getRepository('App:User')->findOneBy(['uuid' => '00000000-0000-0000-0000-000000000002']);
+        $clanuser2 = $manager->getRepository(User::class)->findOneBy(['uuid' => '00000000-0000-0000-0000-000000000002']);
 
         $userclan = new UserClan();
         $userclan->setUser($clanuser2);
@@ -102,7 +102,7 @@ class AppFixtures extends Fixture
         $clan->setWebsite('http://localhost2');
         $clan->setJoinPassword(password_hash('clan2', PASSWORD_ARGON2ID));
 
-        $clanuser3 = $manager->getRepository('App:User')->findOneBy(['uuid' => '00000000-0000-0000-0000-000000000003']);
+        $clanuser3 = $manager->getRepository(User::class)->findOneBy(['uuid' => '00000000-0000-0000-0000-000000000003']);
         $userclan = new UserClan();
         $userclan->setAdmin(true);
         $userclan->setUser($clanuser3);
@@ -116,7 +116,7 @@ class AppFixtures extends Fixture
 
         $manager->persist($userclan);
 
-        $clanuser4 = $manager->getRepository('App:User')->findOneBy(['uuid' => '00000000-0000-0000-0000-000000000004']);
+        $clanuser4 = $manager->getRepository(User::class)->findOneBy(['uuid' => '00000000-0000-0000-0000-000000000004']);
         $userclan = new UserClan();
         $userclan->setUser($clanuser4);
         $userclan->setClan($clan);
@@ -139,7 +139,7 @@ class AppFixtures extends Fixture
         $admin->setSurname('Admin');
         $admin->setEmail('admin@localhost.local');
         $admin->setStatus(1);
-        $admin->setPassword($encoder->encodePassword('admin', null));
+        $admin->setPassword($hasher->hash('admin'));
         $admin->setEmailConfirmed(true);
         $admin->setInfoMails(false);
         $admin->setPersonalDataLocked(false);
@@ -147,7 +147,6 @@ class AppFixtures extends Fixture
         $admin->setIsSuperadmin(true);
 
         $manager->persist($admin);
-
 
         // create one API-Key
         $apiuser = new ApiUser();

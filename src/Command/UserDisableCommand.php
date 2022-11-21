@@ -12,24 +12,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class UserDisableCommand extends Command
 {
     protected static $defaultName = 'app:user:disable';
-    /**
-     * @var UserService
-     */
-    private $userService;
+    protected static $defaultDescription = 'Disables a User';
 
-    public function __construct(USerService $userService)
+    public function __construct(private readonly USerService $userService)
     {
-        $this->userService = $userService;
-
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this
-            ->setDescription('Disables a User')
-            ->addArgument('uuid', InputArgument::REQUIRED, 'UUID from User')
-        ;
+        $this->addArgument('uuid', InputArgument::REQUIRED, 'UUID from User');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -44,6 +36,6 @@ class UserDisableCommand extends Command
             $io->error('Could not disable User!');
         }
 
-        return 0;
+        return (int) Command::SUCCESS;
     }
 }

@@ -8,19 +8,8 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class ApiKeyService
 {
-    /**
-     * @var EntityManagerInterface
-     */
-    private $em;
-    /**
-     * @var ApiUserRepository
-     */
-    private $apiUserRepository;
-
-    public function __construct(EntityManagerInterface $entityManager, ApiUserRepository $apiUserRepository)
+    public function __construct(private readonly EntityManagerInterface $em, private readonly ApiUserRepository $apiUserRepository)
     {
-        $this->em = $entityManager;
-        $this->apiUserRepository = $apiUserRepository;
     }
 
     public function listApiKeys()
@@ -30,7 +19,6 @@ class ApiKeyService
 
     public function createApiKey(string $name, string $apikey)
     {
-
         $apiuser = new ApiUser();
         $apiuser->setApiToken($apikey);
         $apiuser->setName($name);
@@ -40,7 +28,7 @@ class ApiKeyService
             $this->em->flush();
 
             return true;
-        } catch (\Exception $exception) {
+        } catch (\Exception) {
             return false;
         }
     }
@@ -54,7 +42,7 @@ class ApiKeyService
             $this->em->flush();
 
             return true;
-        } catch (\Exception $exception) {
+        } catch (\Exception) {
             return false;
         }
     }

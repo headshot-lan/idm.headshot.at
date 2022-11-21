@@ -9,7 +9,7 @@ use Doctrine\ORM\Query\Filter\SQLFilter;
 
 class UserFilter extends SQLFilter
 {
-    public function addFilterConstraint(ClassMetadata $targetEntity, $targetTableAlias)
+    public function addFilterConstraint(ClassMetadata $targetEntity, $targetTableAlias): string
     {
         switch ($targetEntity->getReflectionClass()->getName()) {
             case User::class:
@@ -17,7 +17,7 @@ class UserFilter extends SQLFilter
             case UserClan::class:
                 return "(SELECT min(gamer.status) FROM gamer WHERE gamer.id = {$targetTableAlias}.user_id) >= 0";
             default:
-                return "";
+                return '';
         }
     }
 }

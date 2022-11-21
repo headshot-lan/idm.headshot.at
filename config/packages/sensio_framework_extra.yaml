@@ -3,4 +3,7 @@ sensio_framework_extra:
         annotations: false
     view:
         annotations: false
-    request: { converters: true }
+    request:
+        converters: true
+        # maybe disable this one day ane explicitly state ParamConverter annotations
+        auto_convert: true

@@ -7,11 +7,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class UuidObject
 {
-    /**
-     * @var UuidInterface
-     *
-     * @Assert\Uuid(strict=false)
-     * @Assert\NotBlank()
-     */
+    #[Assert\Uuid(strict: false)]
+    #[Assert\NotBlank]
     public UuidInterface $uuid;
 }

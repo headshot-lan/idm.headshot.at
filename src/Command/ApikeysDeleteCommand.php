@@ -12,24 +12,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class ApikeysDeleteCommand extends Command
 {
     protected static $defaultName = 'app:apikeys:delete';
-    /**
-     * @var ApiKeyService
-     */
-    private $apiKeyService;
+    protected static $defaultDescription = 'Deletes the specified API Key';
 
-    public function __construct(ApiKeyService $apiKeyService)
+    public function __construct(private readonly ApiKeyService $apiKeyService)
     {
-        $this->apiKeyService = $apiKeyService;
-
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this
-            ->setDescription('Deletes the specified API Key')
-            ->addArgument('name', InputArgument::REQUIRED, 'Name for the API Key')
-        ;
+        $this->addArgument('name', InputArgument::REQUIRED, 'Name for the API Key');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -43,6 +35,6 @@ class ApikeysDeleteCommand extends Command
             $io->error("Could not delete API Key \"{$name}\"");
         }
 
-        return 0;
+        return (int) Command::SUCCESS;
     }
 }

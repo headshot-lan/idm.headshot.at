@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Transfer;
 
 use Symfony\Component\Validator\Constraints as Assert;
@@ -12,26 +11,27 @@ final class Search
      *      @Assert\NotBlank,
      *      @Assert\Uuid(strict=false)
      * })
+     *
      * @var array|null
      */
     public $uuid = [];
 
     /**
-     * @Assert\Type(type="string")
-     * @Assert\NotBlank(allowNull=true)
      * @var string
      */
+    #[Assert\Type(type: 'string')]
+    #[Assert\NotBlank(allowNull: true)]
     public $nickname;
 
     /**
-     * @Assert\Type(type="boolean")
-     * @var boolean|null
+     * @var bool|null
      */
+    #[Assert\Type(type: 'boolean')]
     public $superadmin;
 
     /**
-     * @Assert\Type(type="boolean")
-     * @var boolean|null
+     * @var bool|null
      */
+    #[Assert\Type(type: 'boolean')]
     public $newsletter;
 }

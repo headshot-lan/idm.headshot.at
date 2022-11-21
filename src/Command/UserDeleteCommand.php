@@ -12,24 +12,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class UserDeleteCommand extends Command
 {
     protected static $defaultName = 'app:user:delete';
-    /**
-     * @var UserService
-     */
-    private $userService;
+    protected static $defaultDescription = 'Deletes a User';
 
-    public function __construct(USerService $userService)
+    public function __construct(private readonly USerService $userService)
     {
-        $this->userService = $userService;
-
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this
-            ->setDescription('Deletes a User')
-            ->addArgument('uuid', InputArgument::REQUIRED, 'UUID from User')
-        ;
+        $this->addArgument('uuid', InputArgument::REQUIRED, 'UUID from User');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -39,7 +31,6 @@ class UserDeleteCommand extends Command
         $uuid = $input->getArgument('uuid');
         $user = $this->userService->getUser($uuid);
         if ($io->confirm("Would you like to delete the User \"{$user->getEmail()}\" ?", false)) {
-
             $deleted = $this->userService->deleteUser($uuid);
             if ($deleted) {
                 $io->success("Successfully deleted User \"{$user->getEmail()}\"");
@@ -50,6 +41,6 @@ class UserDeleteCommand extends Command
             $io->warning('Aborted Userdeletion');
         }
 
-        return 0;
+        return (int) Command::SUCCESS;
     }
 }
