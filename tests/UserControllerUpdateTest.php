@@ -146,4 +146,34 @@ JSON;
         $this->assertEquals("application/json", $response->headers->get('Content-Type'));
         $this->assertJson($response->getContent(), "No valid JSON returned.");
     }
+
+    public function testUserUpdateValidDate()
+    {
+        $data = <<<JSON
+{
+    "birthdate": "2022-07-02"
+}
+JSON;
+        $uuid = Uuid::fromInteger(1)->toString();
+        $this->client->request('PATCH', '/api/users/' . $uuid, [], [], ['CONTENT_TYPE' => 'application/json'], $data);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertEquals("application/json", $response->headers->get('Content-Type'));
+        $this->assertJson($response->getContent(), "No valid JSON returned.");
+    }
+
+    public function testUserUpdateInvalidDate()
+    {
+        $data = <<<JSON
+{
+    "birthdate": "invalid"
+}
+JSON;
+        $uuid = Uuid::fromInteger(1)->toString();
+        $this->client->request('PATCH', '/api/users/' . $uuid, [], [], ['CONTENT_TYPE' => 'application/json'], $data);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        $this->assertEquals("application/json", $response->headers->get('Content-Type'));
+        $this->assertJson($response->getContent(), "No valid JSON returned.");
+    }
 }

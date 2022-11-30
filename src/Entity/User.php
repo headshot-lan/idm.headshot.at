@@ -64,7 +64,6 @@ class User
     private ?string $surname = null;
 
     #[ORM\Column(type: 'date', nullable: true)]
-    #[Assert\Date(groups: ['Default', 'Transfer'])]
     #[Groups(['read', 'write'])]
     private ?DateTimeInterface $birthdate = null;
 
