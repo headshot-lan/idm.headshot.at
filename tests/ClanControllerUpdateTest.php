@@ -56,6 +56,79 @@ JSON;
         $this->assertEquals("<1337>", $result['clantag']);
     }
 
+    public function testClanUpdateRemoveDescription()
+    {
+        $data = <<<JSON
+{
+    "description": null,
+    "website": null
+}
+JSON;
+        $uuid = Uuid::fromInteger(1001)->toString();
+        $this->client->request('PATCH', '/api/clans/' . $uuid, [], [], ['CONTENT_TYPE' => 'application/json'], $data);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertEquals("application/json", $response->headers->get('Content-Type'));
+        $this->assertJson($response->getContent(), "No valid JSON returned.");
+
+        $result = json_decode($response->getContent(), true);
+        $this->assertArrayHasKey("uuid", $result);
+        $this->assertArrayHasKey("name", $result);
+        $this->assertArrayHasKey("clantag", $result);
+        $this->assertArrayNotHasKey("description", $result);
+        $this->assertArrayNotHasKey("website", $result);
+
+        // retry to check if the update was saved
+        $this->client->request('GET', '/api/clans/' . $uuid);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertEquals("application/json", $response->headers->get('Content-Type'));
+        $this->assertJson($response->getContent(), "No valid JSON returned.");
+
+        $result = json_decode($response->getContent(), true);
+        $this->assertArrayHasKey("uuid", $result);
+        $this->assertArrayHasKey("name", $result);
+        $this->assertArrayHasKey("clantag", $result);
+        $this->assertArrayNotHasKey("description", $result);
+        $this->assertArrayNotHasKey("website", $result);
+        $this->assertArrayHasKey("createdAt", $result);
+        $this->assertArrayHasKey("modifiedAt", $result);
+        $this->assertArrayNotHasKey("joinPassword", $result);
+        $this->assertEquals($uuid, $result['uuid']);
+        $this->assertEquals("Clan 1", $result['name']);
+        $this->assertEquals("CL1", $result['clantag']);
+    }
+
+    public function testClanUpdateRemoveClantag()
+    {
+        $data = <<<JSON
+{
+    "clantag": null
+}
+JSON;
+        $uuid = Uuid::fromInteger(1001)->toString();
+        $this->client->request('PATCH', '/api/clans/' . $uuid, [], [], ['CONTENT_TYPE' => 'application/json'], $data);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        $this->assertEquals("application/json", $response->headers->get('Content-Type'));
+        $this->assertJson($response->getContent(), "No valid JSON returned.");
+
+        // retry to check if the update was not saved
+        $this->client->request('GET', '/api/clans/' . $uuid);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertEquals("application/json", $response->headers->get('Content-Type'));
+        $this->assertJson($response->getContent(), "No valid JSON returned.");
+
+        $result = json_decode($response->getContent(), true);
+        $this->assertArrayHasKey("uuid", $result);
+        $this->assertArrayHasKey("name", $result);
+        $this->assertArrayHasKey("clantag", $result);
+        $this->assertEquals($uuid, $result['uuid']);
+        $this->assertEquals("Clan 1", $result['name']);
+        $this->assertEquals("CL1", $result['clantag']);
+    }
+
     public function testClanUpdateFailReadOnlyArgument()
     {
         $data = <<<JSON

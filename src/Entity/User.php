@@ -145,7 +145,7 @@ class User
         return $this->email;
     }
 
-    public function setEmail(string $email): self
+    public function setEmail(?string $email): self
     {
         $this->email = $email;
 
@@ -157,7 +157,7 @@ class User
         return $this->nickname;
     }
 
-    public function setNickname(string $nickname): self
+    public function setNickname(?string $nickname): self
     {
         $this->nickname = $nickname;
 
@@ -169,7 +169,7 @@ class User
         return $this->firstname;
     }
 
-    public function setFirstname(string $firstname): self
+    public function setFirstname(?string $firstname): self
     {
         $this->firstname = $firstname;
 
@@ -181,7 +181,7 @@ class User
         return $this->surname;
     }
 
-    public function setSurname(string $surname): self
+    public function setSurname(?string $surname): self
     {
         $this->surname = $surname;
 
@@ -205,7 +205,7 @@ class User
         return $this->postcode;
     }
 
-    public function setPostcode(string $postcode): self
+    public function setPostcode(?string $postcode): self
     {
         $this->postcode = $postcode;
 
@@ -217,7 +217,7 @@ class User
         return $this->city;
     }
 
-    public function setCity(string $city): self
+    public function setCity(?string $city): self
     {
         $this->city = $city;
 
@@ -229,7 +229,7 @@ class User
         return $this->street;
     }
 
-    public function setStreet(string $street): self
+    public function setStreet(?string $street): self
     {
         $this->street = $street;
 
@@ -241,7 +241,7 @@ class User
         return $this->country;
     }
 
-    public function setCountry(string $country): self
+    public function setCountry(?string $country): self
     {
         $this->country = $country;
 
@@ -253,7 +253,7 @@ class User
         return $this->phone;
     }
 
-    public function setPhone(string $phone): self
+    public function setPhone(?string $phone): self
     {
         $this->phone = $phone;
 
@@ -277,7 +277,7 @@ class User
         return $this->emailConfirmed;
     }
 
-    public function setEmailConfirmed(bool $emailConfirmed): self
+    public function setEmailConfirmed(?bool $emailConfirmed): self
     {
         $this->emailConfirmed = $emailConfirmed;
 
@@ -313,7 +313,7 @@ class User
         return (string) $this->password;
     }
 
-    public function setPassword(string $password): self
+    public function setPassword(?string $password): self
     {
         $this->password = $password;
 
@@ -349,7 +349,7 @@ class User
         return $this->registeredAt;
     }
 
-    public function setRegisteredAt(DateTimeInterface $registeredAt): self
+    public function setRegisteredAt(?DateTimeInterface $registeredAt): self
     {
         $this->registeredAt = $registeredAt;
 
@@ -361,7 +361,7 @@ class User
         return $this->modifiedAt;
     }
 
-    public function setModifiedAt(DateTimeInterface $modifiedAt): self
+    public function setModifiedAt(?DateTimeInterface $modifiedAt): self
     {
         $this->modifiedAt = $modifiedAt;
 
