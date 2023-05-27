@@ -45,7 +45,7 @@ class User
      * @var ?string The hashed password
      */
     #[ORM\Column(type: 'string')]
-    #[Assert\Length(min: 6, max: 128, minMessage: 'The password must be at least {{ limit }} characters long', maxMessage: 'The password cannot be longer than {{ limit }} characters', groups: ['Transfer', 'Create'])]
+    #[Assert\Length(min: 5, max: 128, minMessage: 'The password must be at least {{ limit }} characters long', maxMessage: 'The password cannot be longer than {{ limit }} characters', groups: ['Transfer', 'Create'])]
     #[Assert\NotBlank(groups: ['Default', 'Create'])]
     #[Groups(['write'])]
     private ?string $password = null;
