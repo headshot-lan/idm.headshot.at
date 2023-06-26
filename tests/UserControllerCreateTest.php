@@ -67,6 +67,67 @@ JSON;
         $this->assertTrue($result['infoMails']);
     }
 
+    public function testUserCreateSuccessRegistration()
+    {
+        $data = <<<JSON
+{
+    "email": "b@lup.com",
+    "password": "foofoo",
+    "nickname": "blup",
+    "firstname": "foo",
+    "surname": "baa",
+    "infoMails": false
+}
+JSON;
+        $this->client->request('POST', '/api/users', [], [], ['CONTENT_TYPE' => 'application/json'], $data);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
+        $this->assertEquals("application/json", $response->headers->get('Content-Type'));
+        $this->assertJson($response->getContent(), "No valid JSON returned.");
+
+        $result = json_decode($response->getContent(), true);
+        $this->assertArrayHasKey("uuid", $result);
+        $this->assertArrayHasKey("email", $result);
+        $this->assertArrayHasKey("nickname", $result);
+        $this->assertArrayHasKey("firstname", $result);
+        $this->assertArrayHasKey("surname", $result);
+        $this->assertArrayNotHasKey("password", $result);
+
+        $this->assertEquals("blup", $result['nickname']);
+        $this->assertEquals("b@lup.com", $result['email']);
+        $this->assertEquals("foo", $result['firstname']);
+        $this->assertEquals("baa", $result['surname']);
+        $this->assertFalse($result['isSuperadmin']);
+        $this->assertFalse($result['emailConfirmed']);
+        $this->assertFalse($result['infoMails']);
+    }
+
+
+    public function testUserCreateSuccessLongName()
+    {
+        // name with a length of > 255
+        $name = str_repeat('o', 277);
+        $data = <<<JSON
+{
+    "email": "b@lup.com",
+    "password": "foofoo",
+    "nickname": "blup",
+    "firstname": "$name",
+    "surname": null,
+    "infoMails": false
+}
+JSON;
+        $this->client->request('POST', '/api/users', [], [], ['CONTENT_TYPE' => 'application/json'], $data);
+        $response = $this->client->getResponse();
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        $this->assertEquals("application/json", $response->headers->get('Content-Type'));
+        $this->assertJson($response->getContent(), "No valid JSON returned.");
+
+        $result = json_decode($response->getContent(), true);
+        $this->assertArrayHasKey('field', $result);
+        $this->assertEquals('firstname', $result['field']);
+    }
+
     public function testUserCreateSuccess2()
     {
         $data = <<<JSON

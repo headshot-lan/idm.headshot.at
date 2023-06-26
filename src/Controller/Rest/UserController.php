@@ -160,6 +160,11 @@ class UserController extends AbstractFOSRestController
     #[ParamConverter('new', options: ['deserializationContext' => ['allow_extra_attributes' => false], 'validator' => ['groups' => ['Transfer', 'Create', 'Unique']]], converter: 'fos_rest.request_body')]
     public function createUserAction(User $new, ConstraintViolationListInterface $validationErrors): Response
     {
+        // Known issue: if the emailConfirmed field is set and null, 400 is returned
+        // This is the case although User::emailConfirmed is of type ?bool, because doctrine-bridge's DoctrineExtractor
+        // (https://symfony.com/doc/current/components/property_info.html#doctrineextractor) uses the doctrine attributes.
+        // maybe FIXME disable DoctrineExtractor
+
         if ($view = $this->handleValidationErrors($validationErrors)) {
             return $this->handleView($view);
         }
@@ -168,7 +173,7 @@ class UserController extends AbstractFOSRestController
 
         // TODO move this to UserService
         $new->setStatus(1);
-        $new->setEmailConfirmed(false);
+        $new->setEmailConfirmed($new->getEmailConfirmed() ?? false);
         $new->setInfoMails($new->getInfoMails() ?? false);
         $new->setPassword($hasher->hash($new->getPassword()));
 
