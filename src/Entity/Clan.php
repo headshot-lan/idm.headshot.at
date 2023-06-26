@@ -56,6 +56,7 @@ class Clan
     private ?string $clantag = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\Length(max: 255, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Assert\Url(groups: ['Default', 'Transfer'])]
     #[Groups(['read', 'write'])]
     private ?string $website = null;

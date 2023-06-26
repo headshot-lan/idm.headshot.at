@@ -35,7 +35,7 @@ class User
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['read', 'write'])]
-    private bool $emailConfirmed = false;
+    private ?bool $emailConfirmed = false;
 
     #[ORM\Column(type: 'boolean', nullable: true)]
     #[Groups(['read', 'write'])]
@@ -45,22 +45,24 @@ class User
      * @var ?string The hashed password
      */
     #[ORM\Column(type: 'string')]
-    #[Assert\Length(min: 5, max: 128, minMessage: 'The password must be at least {{ limit }} characters long', maxMessage: 'The password cannot be longer than {{ limit }} characters', groups: ['Transfer', 'Create'])]
+    #[Assert\Length(min: 5, max: 128, minMessage: 'The {{ field }} must be at least {{ limit }} characters long', maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Transfer', 'Create'])]
     #[Assert\NotBlank(groups: ['Default', 'Create'])]
     #[Groups(['write'])]
     private ?string $password = null;
 
     #[ORM\Column(type: 'string', length: 64, unique: true)]
     #[Assert\NotBlank(groups: ['Default', 'Create'])]
-    #[Assert\Length(min: 1, max: 64, minMessage: 'The nickname must be at least {{ limit }} characters long', maxMessage: 'The nickname cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
+    #[Assert\Length(min: 1, max: 64, minMessage: 'The {{ field }} must be at least {{ limit }} characters long', maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $nickname = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\Length(max: 255, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $firstname = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\Length(max: 255, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $surname = null;
 
@@ -86,14 +88,17 @@ class User
     private ?bool $isSuperadmin = false;
 
     #[ORM\Column(type: 'string', length: 10, nullable: true)]
+    #[Assert\Length(max: 10, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $postcode = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\Length(max: 255, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $city = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\Length(max: 255, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $street = null;
 
@@ -105,22 +110,27 @@ class User
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Groups(['read', 'write'])]
     #[Assert\Regex('/^[+]?\d([ \/()]?\d)*$/', message: 'Invalid phone number format.', groups: ['Default', 'Transfer'])]
+    #[Assert\Length(max: 255, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     private ?string $phone = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Assert\Url(groups: ['Default', 'Transfer'])]
+    #[Assert\Length(max: 255, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $website = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Groups(['read', 'write'])]
+    #[Assert\Length(max: 255, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     private ?string $steamAccount = null;
 
     #[ORM\Column(type: 'string', length: 4096, nullable: true)]
+    #[Assert\Length(max: 4096, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $hardware = null;
 
     #[ORM\Column(type: 'string', length: 4096, nullable: true)]
+    #[Assert\Length(max: 4096, maxMessage: 'The {{ field }} cannot be longer than {{ limit }} characters', groups: ['Default', 'Transfer', 'Create'])]
     #[Groups(['read', 'write'])]
     private ?string $statements = null;
 
