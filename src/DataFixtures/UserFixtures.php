@@ -33,7 +33,7 @@ class UserFixtures extends Fixture
             $user->setUuid(Uuid::fromInteger(strval($i)));
             $user->setStatus(1);
             $user->setPassword($hasher->hash('user'.$i));
-            $user->setEmailConfirmed(1 != $i % 5);
+            $user->setEmailConfirmed($i < 10 || 1 != $i % 4);
             $user->setInfoMails(1 == ($i + 1) % 5);
             $user->setPersonalDataLocked(1 == ($i + 1) % 7);
             $user->setPersonalDataConfirmed(1 != ($i + 2) % 3);
