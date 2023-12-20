@@ -1,4 +1,5 @@
-## Installation
+## idm.headshot.at 
+Identity Management System based on KRRUg/IDM.
 
 ```
 composer install
@@ -47,3 +48,9 @@ Disable a User: `php bin/console app:user:disable`
 Enable a User: `php bin/console app:user:enable`  
 Edit a User: `php bin/console app:user:edit`  
 List one/all Users: `php bin/console app:user:list`  
+
+# idm.headshot.at
+
+Update/setup .. not sure how to run migrations yet, initial setup was done with db dump. php needs to be made available on the host, then we can run the migrations from above.
+
+./deploy.sh
