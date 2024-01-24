@@ -8,7 +8,6 @@ use App\Repository\UserRepository;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 use Doctrine\Persistence\ObjectManager;
-use NumberToWords\NumberToWords;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 
@@ -20,6 +19,7 @@ class LansuiteUserImportFixtures extends Fixture implements FixtureGroupInterfac
     // -------- Requirements -------- //
     // Lansuite User Exports
     // ls_user.php
+    
     
     public function __construct(
         private readonly UserRepository $userRepository
@@ -49,27 +49,30 @@ class LansuiteUserImportFixtures extends Fixture implements FixtureGroupInterfac
                     continue;
                 }
             }
-            
+            $isAdmin = $d['type'] == 3;
+            $uuid = Uuid::fromInteger(12300 . strval($id));
+            // $user = $isAdmin ? new UserAdmin($uuid) : new UserGamer($uuid);
             $user = new User();
+            if ($isAdmin) {
+                $user->setIsSuperadmin(true);
+            }
             $user->setNickname($d['username']);
             $user->setEmail($d['email']);
             $user->setFirstname($d['firstname']);
             $user->setSurname($d['name']);
-            $user->setUuid(Uuid::fromInteger(12300 . strval($id)));
             $user->setStatus(1);
-            $user->setEmailConfirmed(false);
+            $user->setEmailConfirmed(true);
             $user->setInfoMails(true);
-            $user->setPassword(LansuiteImporter::getRandomString(16));
+            $user->setPassword($d['password']);
             $user->setPhone($d['handy'] || $d['telefon'] || null);
             $user->setPersonalDataLocked(false);
             $user->setPersonalDataConfirmed(false);
-            $user->setIsSuperadmin($d['type'] == 3);
-            
+
             $user->setGender($d['sex'] == 2 ? 'f' : 'm');
             $this->addReference('user-ls-'.$d['userid'], $user);
             $manager->persist($user);
             $manager->flush();
-            echo "Created user {$d['username']} ({$d['email']})\n";
+            echo "Created ". ($isAdmin ? 'admin' : 'user') ." {$d['username']} ({$d['email']})\n";
         }
 
         echo "Finished importing users";

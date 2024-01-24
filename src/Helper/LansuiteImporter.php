@@ -35,11 +35,14 @@ class LansuiteImporter
         fclose($handle);
       }
     
-    
-      // filter ls_user array by userids from ls_user_party and if ls_user.email in newsletter_users.email and newsletter_users.active = 1
+      echo "Active Newsletter Emails: " . count($activeNewsletterEmails) . "\n";
+      echo "Inactive Newsletter Emails: " . count($inActiveNewsletterEmails) . "\n";
+
+      // filter active newsletter users
       $filteredUsers = array_filter($ls_user, function ($user) use ($activeNewsletterEmails, $inActiveNewsletterEmails) {
         $isActiveNewletterUser = in_array($user['email'], $activeNewsletterEmails);
         if (!$isActiveNewletterUser) {
+          echo "User Newsletter inactive: " . $user['email'] . "\n";
           $isNotInInaActive = !in_array($user['email'], $inActiveNewsletterEmails);
           if ($isNotInInaActive) {
             echo "User not in active or inactive newsletter: " . $user['email'] . "\n";

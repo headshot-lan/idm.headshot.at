@@ -11,6 +11,7 @@ BASE_DIR=`dirname $0`
 #curl --insecure https://carol.selfhost.de/update?username=303092&password=GegJabCij2&textmodi=1
 #sleep 5
 echo "Transfering data"
-rsync -avzh --exclude='/.env' --exclude='/.git' --exclude='/var' --exclude='/node_modules' * -e "ssh -p 822 -o ConnectTimeout=5" headshot_ftp@kdn10.futureweb.at:/idm.headshot.at/
-echo "Done"
+rsync -avzh --exclude-from=".deployignore" --delete * -e "ssh -p 822 -o ConnectTimeout=5" headshot_ftp@kdn10.futureweb.at:/idm.headshot.at/
 
+echo "Rsynced data, clearing cache"
+ssh -p 822 headshot_ftp@kdn10.futureweb.at "rm -rf /idm.headshot.at/var/cache/*"

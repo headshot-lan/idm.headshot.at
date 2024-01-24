@@ -54,3 +54,5 @@ List one/all Users: `php bin/console app:user:list`
 Update/setup .. not sure how to run migrations yet, initial setup was done with db dump. php needs to be made available on the host, then we can run the migrations from above.
 
 ./deploy.sh
+
+Import Lansuite users: `php bin/console doctrine:fixtures:load --group=lansuite --append && php bin/console app:user:list`
