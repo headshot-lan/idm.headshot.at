@@ -1,6 +1,7 @@
 ## idm.headshot.at 
 Identity Management System based on KRRUg/IDM.
 
+## Installation
 ```
 composer install
 php bin/console doctrine:database:create
@@ -8,6 +9,14 @@ php bin/console doctrine:migrations:migrate
 #Load Fixtures
 php bin/console doctrine:fixtures:load
 ```
+
+### Run IDM
+Once all setup steps are done start the Symfony development server using
+```
+symfony server:start --port=8001 --no-tls
+```
+Open the printed URL in your browser and log in with a superuser credential
+
 
 ## Fixtures
 User Example:
